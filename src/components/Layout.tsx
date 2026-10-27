@@ -48,7 +48,7 @@ export function Layout() {
       <main className="mx-auto max-w-6xl px-4 py-5">
         <Outlet />
       </main>
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sakura-100 bg-white/95 backdrop-blur md:hidden dark:border-ink-700 dark:bg-ink-800/95" aria-label="底部選單">
+      <nav className="mobile-nav safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sakura-100 bg-white/95 backdrop-blur md:hidden dark:border-ink-700 dark:bg-ink-800/95" aria-label="底部選單">
         <div className="grid grid-cols-5">
           {NAV.filter((n) => MOBILE_NAV.includes(n.to)).map((n) => (
             <NavLink
@@ -91,11 +91,11 @@ export function SyncBadge() {
         data-testid="sync-badge"
         data-status={s.status}
         className="flex items-center gap-2 rounded-full border border-sakura-200 bg-white px-3 py-1 text-xs text-ink-700 shadow-sm hover:bg-sakura-100 dark:border-ink-600 dark:bg-ink-800 dark:text-lav-100"
-        aria-label={`同步狀態：${st.label}${s.pending ? `，${s.pending} 筆待上傳` : ''}`}
+        aria-label={`同步狀態：${st.label}${s.pending && s.user ? `，${s.pending} 筆待上傳` : ''}`}
       >
         <span className={`h-2 w-2 rounded-full ${st.dot}`} aria-hidden />
         <span>{st.label}</span>
-        {s.pending > 0 && s.status !== 'local-only' && <span className="rounded-full bg-sakura-100 px-1.5 text-sakura-700 dark:bg-ink-600 dark:text-sakura-200">{s.pending} 待上傳</span>}
+        {s.pending > 0 && s.user && <span className="rounded-full bg-sakura-100 px-1.5 text-sakura-700 dark:bg-ink-600 dark:text-sakura-200">{s.pending} 待上傳</span>}
       </button>
       <AccountDialog open={open} onClose={() => setOpen(false)} />
     </>

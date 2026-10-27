@@ -4,7 +4,8 @@
 
 @theme {
   --font-sans: 'Noto Sans TC', 'Noto Sans JP', system-ui, -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-  --font-jp: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans TC', sans-serif;
+  /* 字型沒載入時（第一次離線開啟）：Mac/iPhone 用 Hiragino，Windows 用 Meiryo（Yu Gothic 預設太細） */
+  --font-jp: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', 'Yu Gothic Medium', 'Noto Sans TC', sans-serif;
   --color-sakura-50: #fff5f9;
   --color-sakura-100: #ffe4ef;
   --color-sakura-200: #fecde0;
@@ -29,9 +30,16 @@
 
 :root {
   color-scheme: light;
+  --mastery-new: #e4dfee;
 }
 .dark {
   color-scheme: dark;
+  --mastery-new: #4a3f6b;
+}
+
+/* 練習／考試進行中：手機版隱藏底部選單，讓作答按鈕不被擋住 */
+body[data-focus] .mobile-nav {
+  display: none;
 }
 
 html,

@@ -78,6 +78,15 @@ export function ExamPage() {
     if (questions && deadline && now >= deadline) submit()
   }, [now]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 考試中隱藏手機底部選單
+  useEffect(() => {
+    if (!questions) return
+    document.body.dataset.focus = '1'
+    return () => {
+      delete document.body.dataset.focus
+    }
+  }, [questions])
+
   // 鍵盤 1–4 作答
   useEffect(() => {
     if (!questions) return

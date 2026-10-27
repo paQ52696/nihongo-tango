@@ -91,12 +91,12 @@ export function ProgressBar({ value, color = '#ec4f8c', label, segments }: { val
   )
 }
 
-export const MASTERY_COLORS = { new: '#d6d3e0', learning: '#a688f8', mastered: '#ec4f8c' }
+export const MASTERY_COLORS = { new: 'var(--mastery-new)', learning: '#a688f8', mastered: '#ec4f8c' }
 export const MASTERY_LABELS = { new: '未學', learning: '學習中', mastered: '已熟練' }
 
 export function DeckTag({ deck, small }: { deck: Pick<Deck, 'name' | 'color' | 'icon'>; small?: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${small ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm'}`} style={{ background: deck.color + '22', color: deck.color }}>
+    <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full font-medium ${small ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm'}`} style={{ background: deck.color + '22', color: deck.color }}>
       <span aria-hidden>{deck.icon}</span>
       <span className="text-ink-800 dark:text-lav-100">{deck.name}</span>
     </span>

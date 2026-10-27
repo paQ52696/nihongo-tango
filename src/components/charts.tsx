@@ -1,4 +1,5 @@
 // 輕量 SVG 圖表（不依賴圖表套件，離線也能用）
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import type { HeatCell, SectionMastery } from '../lib/stats'
 import { MASTERY_COLORS, MASTERY_LABELS } from './ui'
@@ -15,8 +16,13 @@ export function Heatmap({ cols }: { cols: HeatCell[][] }) {
     const d = c[0]?.date
     if (d && Number(d.slice(8)) <= 7) months.push({ x: i * (size + gap), label: `${Number(d.slice(5, 7))}月` })
   })
+  // 手機寬度放不下時，預設捲到最右邊（今天）
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (box.current) box.current.scrollLeft = box.current.scrollWidth
+  }, [cols.length])
   return (
-    <div className="overflow-x-auto [--heat-0:#f3e8ef] dark:[--heat-0:#3a2f57]">
+    <div ref={box} className="overflow-x-auto [--heat-0:#f3e8ef] dark:[--heat-0:#3a2f57]">
       <svg width={w} height={h} role="img" aria-label="學習熱力圖" className="block">
         {months.map((m) => (
           <text key={m.x} x={m.x} y={10} fontSize={10} className="fill-ink-600 dark:fill-lav-300">
@@ -82,7 +88,7 @@ export function LineChart({ points, height = 160 }: { points: { label: string; v
       )}
       {points.map((p, i) =>
         i % Math.ceil(points.length / 6) === 0 || i === points.length - 1 ? (
-          <text key={'l' + i} x={x(i)} y={height - 6} fontSize={11} textAnchor="middle" className="fill-ink-600 dark:fill-lav-300">
+          <text key={'l' + i} x={x(i)} y={height - 6} fontSize={11} textAnchor={i === points.length - 1 ? 'end' : i === 0 ? 'start' : 'middle'} className="fill-ink-600 dark:fill-lav-300">
             {p.label}
           </text>
         ) : null,

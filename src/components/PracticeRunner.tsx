@@ -49,6 +49,21 @@ export function PracticeRunner({
   const errorType = answered && !correct ? classifyError(q.mode, q.answer, q.mode === 'typing' ? normalizeTyped(chosen) : chosen, { altReadings: q.altReadings }) : null
   const tts = settings.ttsEnabled && ttsSupported()
 
+  // 進行中隱藏手機底部選單
+  useEffect(() => {
+    document.body.dataset.focus = '1'
+    return () => {
+      delete document.body.dataset.focus
+    }
+  }, [])
+  const feedbackRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (chosen !== undefined && window.innerWidth < 768) {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      feedbackRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
+    }
+  }, [chosen])
+
   const say = useCallback(() => {
     if (ttsSupported()) speak(q.speak, settings.ttsRate)
   }, [q, settings.ttsRate])
@@ -240,7 +255,7 @@ export function PracticeRunner({
       )}
 
       {answered && (
-        <section className="card anim-in space-y-3 p-5" data-testid="feedback" data-correct={correct ? 'true' : 'false'}>
+        <section ref={feedbackRef} className="card anim-in space-y-3 p-5" data-testid="feedback" data-correct={correct ? 'true' : 'false'}>
           <div className={`text-lg font-bold ${correct ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'}`}>
             {correct ? '答對了！' : chosen === null ? '時間到！' : '答錯了'}
             {!correct && errorType && (

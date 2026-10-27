@@ -13,7 +13,7 @@ export const ERROR_LABELS: Record<ErrorType, string> = {
   alt_reading: '音讀／訓讀混淆',
   kanji_confusion: '漢字混淆',
   meaning: '意思混淆',
-  timeout: '超時未答',
+  timeout: '未作答／超時',
   other: '其他',
 }
 

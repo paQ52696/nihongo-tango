@@ -125,7 +125,7 @@ export function WordsPage() {
               const card = cardOf(w.id)
               const lvl = card ? masteryLevel(card) : 'new'
               return (
-                <li key={w.id} className="flex items-center gap-3 px-4 py-2.5" data-testid="word-row">
+                <li key={w.id} className="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4" data-testid="word-row">
                   <input type="checkbox" checked={selected.has(w.id)} onChange={() => toggle(w.id)} aria-label={`選取 ${w.kanji || w.reading}`} />
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: MASTERY_COLORS[lvl] }} title={MASTERY_LABELS[lvl]} />
                   <div className="min-w-0 flex-1">
@@ -135,9 +135,9 @@ export function WordsPage() {
                       {w.pos && <span className="rounded bg-lav-100 px-1.5 text-xs dark:bg-ink-600">{w.pos}</span>}
                       <span className="text-sm">{w.meaning}</span>
                     </div>
-                    <div className="mt-0.5 flex flex-wrap gap-1">
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
                       {decksOf(w.id).map(({ deck: d, entry }) => (
-                        <span key={entry.id} className="inline-flex items-center gap-1">
+                        <span key={entry.id} className="inline-flex items-center gap-1 whitespace-nowrap">
                           <DeckTag deck={d!} small />
                           {entry.page != null && <span className="text-xs text-ink-600 dark:text-lav-300">p.{entry.page}</span>}
                           {entry.lesson && <span className="text-xs text-ink-600 dark:text-lav-300">{entry.lesson}</span>}
@@ -151,14 +151,14 @@ export function WordsPage() {
                     </div>
                   </div>
                   {ttsSupported() && (
-                    <button className="btn-ghost px-2" onClick={() => speak(w.reading)} aria-label="發音">
+                    <button className="btn-ghost hidden px-2 sm:inline-flex" onClick={() => speak(w.reading)} aria-label="發音">
                       🔊
                     </button>
                   )}
-                  <button className="btn-ghost px-2" onClick={() => toggleFavorite(w.id)} aria-label={w.favorite ? '取消收藏' : '收藏'} aria-pressed={w.favorite}>
+                  <button className="btn-ghost px-1.5 sm:px-2" onClick={() => toggleFavorite(w.id)} aria-label={w.favorite ? '取消收藏' : '收藏'} aria-pressed={w.favorite}>
                     {w.favorite ? '⭐' : '☆'}
                   </button>
-                  <button className="btn-ghost px-2" onClick={() => setEditing(w)} aria-label="編輯">
+                  <button className="btn-ghost px-1.5 sm:px-2" onClick={() => setEditing(w)} aria-label="編輯">
                     ✎
                   </button>
                 </li>
