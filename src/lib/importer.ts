@@ -4,7 +4,7 @@ import type { Deck, DeckEntry, Word } from '../types'
 import { displaySurface, primaryReading } from './distractors'
 import { hasKanji, normalizeReading } from './kana'
 
-export const FIELDS = ['kanji', 'reading', 'pos', 'meaning', 'example', 'exampleTranslation', 'page', 'lesson', 'tags'] as const
+export const FIELDS = ['kanji', 'reading', 'pos', 'meaning', 'example', 'exampleTranslation', 'page', 'lesson', 'tags', 'note'] as const
 export type Field = (typeof FIELDS)[number]
 
 export const FIELD_LABELS: Record<Field, string> = {
@@ -17,6 +17,7 @@ export const FIELD_LABELS: Record<Field, string> = {
   page: '頁碼',
   lesson: '課次／章節',
   tags: '標籤',
+  note: '備註',
 }
 
 const ALIASES: Record<Field, string[]> = {
@@ -29,6 +30,7 @@ const ALIASES: Record<Field, string[]> = {
   page: ['頁', '頁數', '頁碼', '页码', 'page', 'p'],
   lesson: ['課', '課次', '課別', '章節', '章', '單元', 'lesson', 'chapter', 'unit'],
   tags: ['標籤', '标签', 'tag', 'tags', 'タグ'],
+  note: ['備註', '备注', '附註', 'note', 'notes', 'memo', 'メモ'],
 }
 
 export interface ParsedTable {
@@ -125,6 +127,7 @@ export interface WordDraft {
   page: number | null
   lesson: string | null
   tags: string[]
+  note: string
   problems: string[]
 }
 
@@ -144,6 +147,7 @@ export function rowsToDrafts(table: ParsedTable, mapping: Mapping): WordDraft[] 
       page,
       lesson: get(r, 'lesson') || null,
       tags: get(r, 'tags').split(/[,，、;；]/).map((t) => t.trim()).filter(Boolean),
+      note: get(r, 'note'),
       problems: [],
     }
     if (!d.reading && !d.kanji) d.problems.push('缺少漢字與讀音')

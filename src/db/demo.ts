@@ -53,6 +53,7 @@ export function demoDrafts(): WordDraft[] {
     page: Math.floor(i / 10) + 1,
     lesson: `第${Math.floor(i / 10) + 1}課`,
     tags: ['示範', ...(tags ? [tags] : [])],
+    note: '',
     problems: [],
   }))
 }

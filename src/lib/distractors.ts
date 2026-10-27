@@ -69,6 +69,7 @@ export function primaryReading(reading: string): string {
 export function displaySurface(word: Pick<Word, 'kanji' | 'reading'>): string {
   let k = (word.kanji || '').trim()
   k = k.replace(/[（(](自V|他V|自他V|自|他)[）)]/g, '').trim()
+  k = k.replace(/\s*[（(]な[）)]\s*$/, '').trim()
   const whole = k.match(/^[（(](.+)[）)]$/)
   if (whole) k = whole[1].trim()
   return k || primaryReading(word.reading)
@@ -77,7 +78,8 @@ export function displaySurface(word: Pick<Word, 'kanji' | 'reading'>): string {
 const SMALL_START = /^[っッんンーゃゅょぁぃぅぇぉャュョァィゥェォ]/
 
 function isPlausible(s: string): boolean {
-  if (!s || SMALL_START.test(s)) return false
+  if (!s || [...s].length < 2 || SMALL_START.test(s)) return false
+  if (/[^きぎしじちぢにひびぴみりキギシジチヂニヒビピミリ][ゃゅょャュョ]/.test(s)) return false
   if (/[っッ]$/.test(s) || /[っッ]{2}|ーー|[っッ][んンー]/.test(s)) return false
   // 平假名的促音後面只能接か、さ、た、ぱ行
   const m = s.match(/っ(.)/g)
@@ -86,23 +88,39 @@ function isPlausible(s: string): boolean {
 }
 
 // ---------- 各種語音陷阱 ----------
+/**
+ * 長音陷阱，依「像真的考題」的程度排序：
+ * 1. 拿掉既有長音（おばあさん→おばさん、こうこう→ここう）
+ * 2. お段／う段加「う」、え段加「い」（ここ→こうこ、せんせ→せんせい）
+ * 3. あ段加「あ」、い段加「い」（おばさん→おばあさん），但不在詞尾、不在「ん」「っ」前
+ * 4. 短字（3 拍以內）同時加兩個長音（ここ→こうこう）
+ */
 export function longVowelTraps(reading: string): string[] {
   const m = toMorae(reading)
   const kata = m.some((x) => isKatakana(x[0]))
-  const out = new Set<string>()
-  // 拿掉長音：おばあさん → おばさん、こうこう → ここう
+  const removals: string[] = []
   for (let i = 1; i < m.length; i++) {
-    if (m[i].length === 1 && isLongExtension(m[i - 1], m[i])) out.add([...m.slice(0, i), ...m.slice(i + 1)].join(''))
+    if (m[i].length === 1 && isLongExtension(m[i - 1], m[i])) removals.push([...m.slice(0, i), ...m.slice(i + 1)].join(''))
   }
-  // 加上長音：おばさん → おばあさん、ここ → こうこう
-  const positions: number[] = []
+  const strong: number[] = [] // お段、え段、拗音（こ→こう、せ→せい、しょ→しょう）
+  const medium: number[] = [] // う段（ゆ→ゆう）
+  const weak: number[] = [] // あ段、い段（ば→ばあ、じ→じい）
+  const VERB_END = 'うくぐすつぬぶむるウクグスツヌブムル'
   for (let i = 0; i < m.length; i++) {
     const v = moraVowel(m[i])
     if (!v) continue
     if (i > 0 && m[i].length === 1 && isLongExtension(m[i - 1], m[i])) continue // 自己就是長音
-    if (m[i + 1] && isLongExtension(m[i], m[i + 1])) continue // 已經是長音
-    if (m[i + 1] === undefined && 'いうくぐすつぬぶむるんイウクグスツヌブムルン'.includes(m[i])) continue // 動詞、形容詞語尾
-    positions.push(i)
+    const next = m[i + 1]
+    if (next && isLongExtension(m[i], next)) continue // 已經是長音
+    const last = next === undefined
+    if (last && 'いうくぐすつぬぶむるんイウクグスツヌブムルン'.includes(m[i])) continue // 動詞、形容詞語尾
+    if (i === m.length - 2 && VERB_END.includes(m[m.length - 1])) continue // いれる→いれいる 不自然
+    if ('あいうえおアイウエオ'.includes(m[i])) continue // ああう、いいれる 不自然
+    if (next && 'あいうえおアイウエオんっンッ'.includes(next) && v !== 'o' && v !== 'e') continue
+    const youon = m[i].length === 2
+    if (v === 'o' || v === 'e' || youon) strong.push(i)
+    else if (v === 'u') medium.push(i)
+    else if (!last) weak.push(i)
   }
   const ext = (i: number) => (kata ? 'ー' : LONG_EXT[moraVowel(m[i])!])
   const insertAt = (idx: number[]) => {
@@ -113,9 +131,9 @@ export function longVowelTraps(reading: string): string[] {
     })
     return r.join('')
   }
-  positions.forEach((p) => out.add(insertAt([p])))
-  for (let a = 0; a < Math.min(positions.length, 3); a++)
-    for (let b = a + 1; b < Math.min(positions.length, 3); b++) out.add(insertAt([positions[a], positions[b]]))
+  const doubles: string[] = []
+  if (m.length === 2 && strong.length === 2) doubles.push(insertAt(strong)) // ここ→こうこう
+  const out = new Set([...removals, ...strong.map((p) => insertAt([p])), ...doubles, ...medium.map((p) => insertAt([p])), ...weak.map((p) => insertAt([p]))])
   out.delete(reading)
   return [...out].filter(isPlausible)
 }
@@ -130,6 +148,7 @@ export function sokuonTraps(reading: string): string[] {
   for (let i = 1; i < m.length; i++) {
     const prev = m[i - 1]
     if ('っッんンー'.includes(prev) || !moraVowel(prev)) continue
+    if (i > 1 && prev.length === 1 && isLongExtension(m[i - 2], prev)) continue // れいぞうっこ 不自然
     if (!canPrecedeSokuon(m[i])) continue
     out.add([...m.slice(0, i), kata ? 'ッ' : 'っ', ...m.slice(i)].join(''))
   }
@@ -245,13 +264,16 @@ export function alignReading(surface: string, reading: string, dict: KanjiDict):
   return go(0, 0, null)
 }
 
+/** 音讀的樣子：一拍（可含拗音）＋可選的ん／う／い／く／つ／ち／き */
+const ON_LIKE = /^[^ゃゅょっん][ゃゅょ]?[んういくつちき]?$/
+
 /** 同一漢字的其他讀法（音讀／訓讀混淆）：先生 → せんしょう、さきせい */
 export function altReadingTraps(surface: string, reading: string, dict: KanjiDict): string[] {
   const chars = [...surface]
   const allKanji = chars.every(isKanji)
   if (!allKanji) return [] // 有送假名的動詞／形容詞換音讀很不自然，只處理純漢字詞
   const segs = alignReading(surface, reading, dict)
-  if (!segs) return []
+  if (!segs || segs.some((x) => x.kanji && !x.known)) return [] // 熟字訓（今日、大人）對不齊就不產生
   const out = new Set<string>()
   segs.forEach((seg, i) => {
     if (!seg.kanji) return
@@ -260,6 +282,7 @@ export function altReadingTraps(surface: string, reading: string, dict: KanjiDic
       // 連濁算同一個讀法；但「沒有促音化」（がくこう）是常見陷阱，保留
       if (alt === seg.reading || (RENDAKU[alt[0]] ?? []).some((d) => d + alt.slice(1) === seg.reading)) continue
       if (alt.length < 2 && seg.reading.length >= 2) continue
+      if (!ON_LIKE.test(alt)) continue // 「時計→とはか」「時間→じあいだ」這種訓讀太假，不用
       const cand = segs.map((s, j) => (j === i ? alt : s.reading)).join('')
       out.add(cand)
     }
@@ -295,7 +318,11 @@ export function isNearReading(a: string, b: string): boolean {
 function pickDiverse(groups: Map<string, string[]>, count: number, rng: () => number, taken: Set<string>): Option[] {
   const out: Option[] = []
   const kinds = shuffle([...groups.keys()], rng)
-  const queues = new Map(kinds.map((k) => [k, shuffle(groups.get(k)!, rng)]))
+  // 每一類已依自然程度排序：只把前三名打亂，避免永遠出同一個，也不會抽到太牽強的
+  const queues = new Map(kinds.map((k) => {
+    const list = groups.get(k)!
+    return [k, [...shuffle(list.slice(0, 3), rng), ...list.slice(3)]]
+  }))
   let progress = true
   while (out.length < count && progress) {
     progress = false
@@ -382,9 +409,10 @@ export function generateReadingDistractors(word: Word, pool: Word[], opts: GenOp
   let guard = 0
   while (result.length < count && guard++ < 200) {
     const m = toMorae(core)
-    const i = Math.floor(rng() * m.length)
     const kana = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもらりるれろ'
-    m[i] = kana[Math.floor(rng() * kana.length)]
+    const pickKana = () => kana[Math.floor(rng() * kana.length)]
+    if (m.length < 2) m.push(pickKana()) // 一拍的字（き、め）補成兩拍
+    else m[Math.floor(rng() * m.length)] = pickKana()
     const t = m.join('')
     const key = normalizeReading(t)
     if (taken.has(key) || !isPlausible(t)) continue
