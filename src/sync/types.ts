@@ -1,0 +1,34 @@
+import type { SyncFields, SyncTable } from '../types'
+
+export interface SyncUser {
+  id: string
+  email: string
+}
+
+export interface PullResult {
+  rows: SyncFields[]
+  cursor: string | null
+  hasMore: boolean
+}
+
+/** 同步後端介面：SupabaseBackend（正式）、MockBackend（測試／尚未設定金鑰時開發用） */
+export interface SyncBackend {
+  readonly kind: 'supabase' | 'mock'
+  getUser(): Promise<SyncUser | null>
+  onAuthChange(cb: (user: SyncUser | null) => void): () => void
+  signInWithEmail(email: string): Promise<{ message: string }>
+  signInWithGoogle(): Promise<void>
+  signOut(): Promise<void>
+  /** 上傳；伺服器端以 updated_at 較新者為準 */
+  push(table: SyncTable, rows: SyncFields[]): Promise<void>
+  /** 下載 cursor 之後變動的資料（cursor 由伺服器產生，與裝置時鐘無關） */
+  pull(table: SyncTable, cursor: string | null, limit: number): Promise<PullResult>
+  hasRemoteData(): Promise<boolean>
+}
+
+export class NetworkError extends Error {
+  constructor(message = '無法連線到同步伺服器') {
+    super(message)
+    this.name = 'NetworkError'
+  }
+}

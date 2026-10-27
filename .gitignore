@@ -1,0 +1,13 @@
+node_modules
+dist
+dev-dist
+.env
+.env.local
+*.local
+test-results
+playwright-report
+screenshots
+__pycache__
+# 私人單字來源（有版權，不要推上公開 repo）
+data/*
+!data/README.md
