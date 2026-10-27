@@ -133,7 +133,15 @@ export async function addWordToDeck(deckId: string, wordId: string, pos: { page?
   const [entry, card] = await Promise.all([db.deckEntries.get(eid), db.cards.get(cid)])
   const order = pos.order ?? entry?.order ?? (await db.deckEntries.where('deckId').equals(deckId).count())
   await db.deckEntries.put(
-    stamp<DeckEntry>({ id: eid, deckId, wordId, page: pos.page ?? entry?.page ?? null, lesson: pos.lesson ?? entry?.lesson ?? null, order, deleted: false }),
+    stamp<DeckEntry>({
+      id: eid,
+      deckId,
+      wordId,
+      page: pos.page !== undefined && pos.page !== null ? pos.page : (entry?.page ?? null),
+      lesson: pos.lesson ? pos.lesson : (entry?.lesson ?? null),
+      order,
+      deleted: false,
+    }),
   )
   if (!card) await db.cards.put(stamp<Card>({ id: cid, deckId, wordId, ...newCardFields(), deleted: false }))
   else if (card.deleted) await db.cards.put(stamp<Card>({ ...card, deleted: false }))

@@ -1,5 +1,5 @@
 // 假名工具：正規化、拆音拍（mora）、各種 N5 陷阱轉換的基本操作
-import { toKana, toHiragana as wkToHiragana, isRomaji } from 'wanakana'
+import { toKana } from 'wanakana'
 
 export const SMALL_Y = 'ゃゅょ'
 export const SMALL_VOWELS = 'ぁぃぅぇぉ'
@@ -56,9 +56,10 @@ export function romajiToKana(input: string): string {
   return toKana(input, { IMEMode: true })
 }
 
+/** 打字作答的最終轉換：殘留的羅馬拼音（例如最後的 n）轉成假名，再統一成平假名 */
 export function anyToHiragana(input: string): string {
-  if (isRomaji(input)) return wkToHiragana(input)
-  return kataToHira(input)
+  const s = /[a-z]/i.test(input) ? toKana(input.toLowerCase()) : input
+  return kataToHira(s)
 }
 
 /** 拆成音拍：拗音（きゃ）算一拍 */

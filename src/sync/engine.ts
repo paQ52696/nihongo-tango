@@ -54,6 +54,10 @@ export class SyncEngine {
     return !!this.backend
   }
 
+  getBackend() {
+    return this.backend
+  }
+
   async start() {
     await this.refreshPending()
     this.disposers.push(

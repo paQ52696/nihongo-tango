@@ -1,0 +1,141 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Noto Sans TC', 'Noto Sans JP', system-ui, -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  --font-jp: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans TC', sans-serif;
+  --color-sakura-50: #fff5f9;
+  --color-sakura-100: #ffe4ef;
+  --color-sakura-200: #fecde0;
+  --color-sakura-300: #fba6c7;
+  --color-sakura-400: #f77aaa;
+  --color-sakura-500: #ec4f8c;
+  --color-sakura-600: #d0336f;
+  --color-sakura-700: #a92657;
+  --color-lav-50: #f7f5ff;
+  --color-lav-100: #eee9ff;
+  --color-lav-200: #ddd3fe;
+  --color-lav-300: #c3b2fc;
+  --color-lav-400: #a688f8;
+  --color-lav-500: #8b5cf6;
+  --color-lav-600: #7442e6;
+  --color-lav-700: #5f33c2;
+  --color-ink-900: #1d1530;
+  --color-ink-800: #2a2142;
+  --color-ink-700: #3a2f57;
+  --color-ink-600: #54497a;
+}
+
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-sakura-50 text-ink-900 font-sans antialiased dark:bg-ink-900 dark:text-lav-50;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.jp {
+  font-family: var(--font-jp);
+}
+
+@utility card {
+  @apply rounded-2xl border border-sakura-100 bg-white/90 shadow-sm dark:border-ink-700 dark:bg-ink-800/90;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-sakura-500 text-white hover:bg-sakura-600 dark:bg-sakura-500 dark:hover:bg-sakura-400;
+}
+@utility btn-secondary {
+  @apply btn bg-lav-100 text-lav-700 hover:bg-lav-200 dark:bg-ink-700 dark:text-lav-100 dark:hover:bg-ink-600;
+}
+@utility btn-ghost {
+  @apply btn text-ink-700 hover:bg-sakura-100 dark:text-lav-100 dark:hover:bg-ink-700;
+}
+@utility btn-danger {
+  @apply btn bg-red-500 text-white hover:bg-red-600;
+}
+
+@utility input {
+  @apply w-full rounded-xl border border-sakura-200 bg-white px-3 py-2 text-base outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 dark:border-ink-600 dark:bg-ink-900 dark:focus:ring-ink-600;
+}
+
+@utility label {
+  @apply mb-1 block text-sm font-medium text-ink-700 dark:text-lav-200;
+}
+
+@utility chip {
+  @apply inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm transition-colors;
+}
+
+/* 答對／答錯回饋動畫 */
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.anim-pop {
+  animation: pop 0.35s ease-out;
+}
+.anim-shake {
+  animation: shake 0.4s ease-in-out;
+}
+.anim-in {
+  animation: fade-up 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

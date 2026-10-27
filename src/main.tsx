@@ -1,0 +1,48 @@
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { HashRouter, Route, Routes } from 'react-router-dom'
+import { registerSW } from 'virtual:pwa-register'
+import './index.css'
+import { Layout } from './components/Layout'
+import { HomePage } from './pages/HomePage'
+import { DeckPage } from './pages/DeckPage'
+import { PracticePage } from './pages/PracticePage'
+import { ExamPage } from './pages/ExamPage'
+import { MistakesPage } from './pages/MistakesPage'
+import { StatsPage } from './pages/StatsPage'
+import { WordsPage } from './pages/WordsPage'
+import { ImportPage } from './pages/ImportPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { seedDemoIfEmpty } from './db/demo'
+import { startSync } from './sync'
+import { applyTheme } from './lib/browser'
+
+applyTheme()
+window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme())
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) registerSW({ immediate: true })
+
+seedDemoIfEmpty()
+  .catch((e) => console.error('建立示範資料失敗', e))
+  .finally(() => startSync().catch((e) => console.error('同步啟動失敗', e)))
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <HashRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<HomePage />} />
+          <Route path="deck/:id" element={<DeckPage />} />
+          <Route path="practice" element={<PracticePage />} />
+          <Route path="exam" element={<ExamPage />} />
+          <Route path="mistakes" element={<MistakesPage />} />
+          <Route path="stats" element={<StatsPage />} />
+          <Route path="words" element={<WordsPage />} />
+          <Route path="import" element={<ImportPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="*" element={<HomePage />} />
+        </Route>
+      </Routes>
+    </HashRouter>
+  </StrictMode>,
+)
