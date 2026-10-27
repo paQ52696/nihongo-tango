@@ -86,7 +86,9 @@ export class SupabaseBackend implements SyncBackend {
         // cursor 格式：「ISO 時間」或「overlap:ISO 時間」（第一頁往回多抓）
         const overlap = cursor.startsWith('overlap:')
         const iso = overlap ? cursor.slice(8) : cursor
-        const since = overlap ? new Date(new Date(iso).getTime() - OVERLAP_MS).toISOString() : iso
+        // Postgres 回傳微秒（.123456），Safari 的 Date 解析不了，先截成毫秒
+        const ms = new Date(iso.replace(/(\.\d{3})\d+/, '$1')).getTime()
+        const since = overlap && Number.isFinite(ms) ? new Date(ms - OVERLAP_MS).toISOString() : iso
         q = q.gt('synced_at', since)
       }
       const { data, error } = await q

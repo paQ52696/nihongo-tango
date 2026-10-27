@@ -127,7 +127,7 @@ def rows_from_words(page) -> list[list[str]]:
     return rows
 
 
-def parse_pdf(path: Path, page_range: tuple[int, int] | None = None):
+def parse_pdf(path: Path, page_range: tuple[int, int] | None = None, page_offset: int = 0):
     words, failures, warnings = [], [], []
     stats = {'pages': 0, 'tableRows': 0, 'fallbackPages': []}
     with pdfplumber.open(str(path)) as pdf:
@@ -175,7 +175,7 @@ def parse_pdf(path: Path, page_range: tuple[int, int] | None = None):
                         'meaning': clean(meaning).replace('\n', ''),
                         'example': example,
                         'exampleTranslation': '',
-                        'page': pno,
+                        'page': pno + page_offset,
                         'tags': ['N5', *tags],
                         'note': '；'.join(notes),
                     }
@@ -226,7 +226,8 @@ def main(argv=None):
     ap.add_argument('pdf', type=Path)
     ap.add_argument('-o', '--output', type=Path, default=None, help='輸出 JSON（預設：與 PDF 同名 .json）')
     ap.add_argument('--report', type=Path, default=None, help='報告檔（預設：輸出檔名 .report.md）')
-    ap.add_argument('--pages', default=None, help='只轉某些頁，例如 12-15')
+    ap.add_argument('--pages', default=None, help='只轉某些頁（PDF 頁數），例如 12-15')
+    ap.add_argument('--page-offset', type=int, default=0, help='頁碼位移：PDF 第 1 頁要記成紙本第幾頁減 1，例如 11 → p.12')
     a = ap.parse_args(argv)
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -236,7 +237,7 @@ def main(argv=None):
     if a.pages:
         lo, _, hi = a.pages.partition('-')
         pr = (int(lo), int(hi or lo))
-    words, failures, warnings, stats = parse_pdf(a.pdf, pr)
+    words, failures, warnings, stats = parse_pdf(a.pdf, pr, a.page_offset)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         json.dumps({'source': a.pdf.name, 'generatedAt': datetime.now().isoformat(timespec='seconds'), 'words': words}, ensure_ascii=False, indent=1),

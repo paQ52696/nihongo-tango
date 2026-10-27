@@ -12,6 +12,7 @@ const base = process.env.VITE_BASE || '/'
 export default defineConfig({
   base,
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  build: { chunkSizeWarningLimit: 1200 },
   plugins: [
     react(),
     tailwindcss(),
