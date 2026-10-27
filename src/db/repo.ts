@@ -183,20 +183,51 @@ export interface ImportResult {
 
 export async function importDrafts(deckId: string, checks: DraftCheck[], decision: DupDecision | ((c: DraftCheck) => DupDecision) = 'merge'): Promise<ImportResult> {
   const res: ImportResult = { added: 0, merged: 0, separate: 0, skipped: 0 }
-  let order = await db.deckEntries.where('deckId').equals(deckId).count()
+  // 先整批讀出、在記憶體算好，最後一次 bulkPut（Safari 的 IndexedDB 逐筆寫入很慢）
   await db.transaction('rw', db.words, db.deckEntries, db.cards, async () => {
-    for (const c of checks) {
+    const entries = new Map((await db.deckEntries.where('deckId').equals(deckId).toArray()).map((e) => [e.id, e]))
+    const cards = new Map((await db.cards.where('deckId').equals(deckId).toArray()).map((c) => [c.id, c]))
+    const detIds = checks.map((c) => wordIdFor(c.draft))
+    // 用一次 getAll 讀全部 id（比逐筆 bulkGet 少很多次 IndexedDB 請求）
+    const wanted = new Set(detIds)
+    const takenIds = new Set((await db.words.toCollection().primaryKeys()).filter((id) => wanted.has(id)))
+    let order = [...entries.values()].filter((e) => !e.deleted).length
+    const wordsOut = new Map<string, Word>()
+    const entriesOut: DeckEntry[] = []
+    const cardsOut: Card[] = []
+    const now = newCardFields()
+
+    const link = (wordId: string, page: number | null, lesson: string | null) => {
+      const eid = entryIdFor(deckId, wordId)
+      const cid = cardIdFor(deckId, wordId)
+      const prev = entries.get(eid)
+      entriesOut.push(
+        stamp<DeckEntry>({
+          id: eid,
+          deckId,
+          wordId,
+          page: page ?? prev?.page ?? null,
+          lesson: lesson ?? prev?.lesson ?? null,
+          order: prev && !prev.deleted ? prev.order : order++,
+          deleted: false,
+        }),
+      )
+      const card = cards.get(cid)
+      if (!card) cardsOut.push(stamp<Card>({ id: cid, deckId, wordId, ...now, deleted: false }))
+      else if (card.deleted) cardsOut.push(stamp<Card>({ ...card, deleted: false }))
+    }
+
+    checks.forEach((c, i) => {
       const d = c.draft
       if (c.status === 'invalid' || c.status === 'dupInFile') {
         res.skipped++
-        continue
+        return
       }
-      const pos = { page: d.page, lesson: d.lesson }
       if (c.status === 'inDeck' && c.existing) {
         // 已在這個單字庫：只補上缺的位置資訊
-        await addWordToDeck(deckId, c.existing.id, pos)
+        link(c.existing.id, d.page, d.lesson)
         res.skipped++
-        continue
+        return
       }
       const fields = {
         kanji: d.kanji,
@@ -210,23 +241,26 @@ export async function importDrafts(deckId: string, checks: DraftCheck[], decisio
       let wordId: string
       const choice = typeof decision === 'function' ? decision(c) : decision
       if (c.status === 'existing' && c.existing && choice === 'merge') {
-        const w = c.existing
+        const w = wordsOut.get(c.existing.id) ?? c.existing
         const merged: Word = { ...w }
         for (const [k, v] of Object.entries(fields)) if (!(merged as any)[k] && v) (merged as any)[k] = v
         merged.tags = [...new Set([...w.tags, ...d.tags])]
-        await db.words.put(stamp<Word>(merged))
+        wordsOut.set(w.id, stamp<Word>(merged))
         wordId = w.id
         res.merged++
       } else {
-        const detId = wordIdFor(d)
-        const taken = c.status === 'existing' || (await db.words.get(detId))
+        const detId = detIds[i]
+        const taken = c.status === 'existing' || takenIds.has(detId) || wordsOut.has(detId)
         wordId = taken ? newId() : detId
-        await db.words.put(stamp<Word>({ id: wordId, ...fields, tags: d.tags, favorite: false, deleted: false }))
+        wordsOut.set(wordId, stamp<Word>({ id: wordId, ...fields, tags: d.tags, favorite: false, deleted: false }))
         if (c.status === 'existing') res.separate++
         else res.added++
       }
-      await addWordToDeck(deckId, wordId, { ...pos, order: order++ })
-    }
+      link(wordId, d.page, d.lesson)
+    })
+    await db.words.bulkPut([...wordsOut.values()])
+    await db.deckEntries.bulkPut(entriesOut)
+    await db.cards.bulkPut(cardsOut)
   })
   notifyChange()
   return res

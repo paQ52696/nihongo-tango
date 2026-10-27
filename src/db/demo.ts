@@ -60,11 +60,14 @@ export function demoDrafts(): WordDraft[] {
 
 /** 第一次開啟 App 時建立示範單字庫（只建一次；刪掉後不會再自動出現） */
 export async function seedDemoIfEmpty(): Promise<boolean> {
-  if (await getMeta('demoSeeded', false)) return false
-  await setMeta('demoSeeded', true)
-  if ((await db.decks.count()) > 0) return false
-  await createDeck({ id: DEMO_DECK_ID, name: '示範單字庫', color: '#f472b6', icon: '🌸', dailyNewLimit: 20 })
-  const words = await db.words.toArray()
-  await importDrafts(DEMO_DECK_ID, checkDuplicates(demoDrafts(), words, [], DEMO_DECK_ID))
-  return true
+  // 整個建立過程在同一個交易裡：中途關掉分頁也不會留下沒有單字的空庫
+  return db.transaction('rw', [db.meta, db.decks, db.words, db.deckEntries, db.cards], async () => {
+    if (await getMeta('demoSeeded', false)) return false
+    await setMeta('demoSeeded', true)
+    if ((await db.decks.count()) > 0) return false
+    await createDeck({ id: DEMO_DECK_ID, name: '示範單字庫', color: '#f472b6', icon: '🌸', dailyNewLimit: 20 })
+    const words = await db.words.toArray()
+    await importDrafts(DEMO_DECK_ID, checkDuplicates(demoDrafts(), words, [], DEMO_DECK_ID))
+    return true
+  })
 }

@@ -16,6 +16,12 @@ import { SettingsPage } from './pages/SettingsPage'
 import { seedDemoIfEmpty } from './db/demo'
 import { startSync } from './sync'
 import { applyTheme } from './lib/browser'
+import { db } from './db/schema'
+import { exportAll } from './db/backup'
+import { getEngine } from './sync'
+
+// 開發／E2E 測試用的除錯掛勾
+if (import.meta.env.DEV || import.meta.env.VITE_E2E) (window as any).__app = { db, exportAll, getEngine }
 
 applyTheme()
 window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme())

@@ -91,7 +91,10 @@ export function ImportPage() {
       <section className="card space-y-3 p-5">
         <h2 className="font-bold">① 選擇檔案</h2>
         <p className="text-sm text-ink-600 dark:text-lav-300">支援 CSV（UTF-8 或 Big5）、Excel（.xlsx）、JSON（本 App 匯出檔或 scripts/import_pdf.py 的輸出）。第一列要是欄位名稱。PDF、Word 請先用 scripts/ 裡的轉換腳本轉成 JSON／CSV。</p>
-        <input type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.ods,.json" onChange={(e) => onFile(e.target.files?.[0])} className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-sakura-100 file:px-4 file:py-2 file:text-sakura-700 dark:file:bg-ink-700 dark:file:text-sakura-200" data-testid="import-file" aria-label="選擇檔案" />
+        <input type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.ods,.json" onChange={(e) => {
+            onFile(e.target.files?.[0])
+            e.target.value = '' // 同一個檔案再選一次也要能觸發
+          }} className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-sakura-100 file:px-4 file:py-2 file:text-sakura-700 dark:file:bg-ink-700 dark:file:text-sakura-200" data-testid="import-file" aria-label="選擇檔案" />
         {fileName && table && (
           <p className="text-sm">
             已讀取 <strong>{fileName}</strong>：{table.rows.length} 列、{table.headers.length} 欄

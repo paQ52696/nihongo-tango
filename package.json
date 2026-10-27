@@ -11,7 +11,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "mock-cloud": "node scripts/mock-cloud.mjs",
-    "import:pdf": "python scripts/import_pdf.py data/n5.pdf -o data/out/n5.json"
+    "import:pdf": "python scripts/import_pdf.py data/n5.pdf -o data/out/n5.json",
+    "build:e2e": "vite build --outDir dist-e2e",
+    "test:py": "python -m unittest discover tests/python"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

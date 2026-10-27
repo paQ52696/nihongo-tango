@@ -1,0 +1,525 @@
+{
+ "source": "範例",
+ "words": [
+  {
+   "no": 1,
+   "kanji": "会う",
+   "reading": "あう",
+   "pos": "動詞",
+   "meaning": "見面",
+   "example": "駅で友達に会います。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 2,
+   "kanji": "青い",
+   "reading": "あおい",
+   "pos": "い形容詞",
+   "meaning": "藍色的",
+   "example": "青い空がきれいです。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 3,
+   "kanji": "赤い",
+   "reading": "あかい",
+   "pos": "い形容詞",
+   "meaning": "紅色的",
+   "example": "赤いりんごを買いました。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 4,
+   "kanji": "秋",
+   "reading": "あき",
+   "pos": "名詞",
+   "meaning": "秋天",
+   "example": "秋は涼しいです。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 5,
+   "kanji": "朝",
+   "reading": "あさ",
+   "pos": "名詞",
+   "meaning": "早上",
+   "example": "朝ご飯を食べます。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 6,
+   "kanji": "足",
+   "reading": "あし",
+   "pos": "名詞",
+   "meaning": "腳",
+   "example": "足が痛いです。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 7,
+   "kanji": "遊ぶ",
+   "reading": "あそぶ",
+   "pos": "動詞",
+   "meaning": "玩",
+   "example": "公園で遊びます。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 8,
+   "kanji": "頭",
+   "reading": "あたま",
+   "pos": "名詞",
+   "meaning": "頭",
+   "example": "頭がいいです。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 9,
+   "kanji": "新しい",
+   "reading": "あたらしい",
+   "pos": "い形容詞",
+   "meaning": "新的",
+   "example": "新しい本です。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 10,
+   "kanji": "暑い",
+   "reading": "あつい",
+   "pos": "い形容詞",
+   "meaning": "熱的（天氣）",
+   "example": "今日は暑いです。",
+   "exampleTranslation": "",
+   "page": 1,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 11,
+   "kanji": "兄",
+   "reading": "あに",
+   "pos": "名詞",
+   "meaning": "哥哥",
+   "example": "兄は学生です。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 12,
+   "kanji": "姉",
+   "reading": "あね",
+   "pos": "名詞",
+   "meaning": "姊姊",
+   "example": "姉は先生です。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 13,
+   "kanji": "雨",
+   "reading": "あめ",
+   "pos": "名詞",
+   "meaning": "雨",
+   "example": "雨が降っています。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 14,
+   "kanji": "洗う",
+   "reading": "あらう",
+   "pos": "動詞",
+   "meaning": "洗",
+   "example": "手を洗います。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 15,
+   "kanji": "歩く",
+   "reading": "あるく",
+   "pos": "動詞",
+   "meaning": "走路",
+   "example": "駅まで歩きます。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 16,
+   "kanji": "言う",
+   "reading": "いう",
+   "pos": "動詞",
+   "meaning": "說",
+   "example": "名前を言ってください。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 17,
+   "kanji": "家",
+   "reading": "いえ",
+   "pos": "名詞",
+   "meaning": "家",
+   "example": "家に帰ります。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 18,
+   "kanji": "行く",
+   "reading": "いく",
+   "pos": "動詞",
+   "meaning": "去",
+   "example": "学校へ行きます。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 19,
+   "kanji": "池",
+   "reading": "いけ",
+   "pos": "名詞",
+   "meaning": "池塘",
+   "example": "池に魚がいます。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 20,
+   "kanji": "医者",
+   "reading": "いしゃ",
+   "pos": "名詞",
+   "meaning": "醫生",
+   "example": "父は医者です。",
+   "exampleTranslation": "",
+   "page": 2,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 21,
+   "kanji": "忙しい",
+   "reading": "いそがしい",
+   "pos": "い形容詞",
+   "meaning": "忙碌",
+   "example": "毎日忙しいです。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 22,
+   "kanji": "痛い",
+   "reading": "いたい",
+   "pos": "い形容詞",
+   "meaning": "痛",
+   "example": "歯が痛いです。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 23,
+   "kanji": "一日",
+   "reading": "いちにち",
+   "pos": "名詞",
+   "meaning": "一天",
+   "example": "一日中寝ました。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 24,
+   "kanji": "犬",
+   "reading": "いぬ",
+   "pos": "名詞",
+   "meaning": "狗",
+   "example": "犬が好きです。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 25,
+   "kanji": "今",
+   "reading": "いま",
+   "pos": "名詞",
+   "meaning": "現在",
+   "example": "今、何時ですか。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 26,
+   "kanji": "意味",
+   "reading": "いみ",
+   "pos": "名詞",
+   "meaning": "意思",
+   "example": "この言葉の意味は何ですか。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 27,
+   "kanji": "妹",
+   "reading": "いもうと",
+   "pos": "名詞",
+   "meaning": "妹妹",
+   "example": "妹は三歳です。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 28,
+   "kanji": "入口",
+   "reading": "いりぐち",
+   "pos": "名詞",
+   "meaning": "入口",
+   "example": "入口はあそこです。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 29,
+   "kanji": "色",
+   "reading": "いろ",
+   "pos": "名詞",
+   "meaning": "顏色",
+   "example": "どの色が好きですか。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 30,
+   "kanji": "上",
+   "reading": "うえ",
+   "pos": "名詞",
+   "meaning": "上面",
+   "example": "机の上に本があります。",
+   "exampleTranslation": "",
+   "page": 3,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 31,
+   "kanji": "後ろ",
+   "reading": "うしろ",
+   "pos": "名詞",
+   "meaning": "後面",
+   "example": "後ろを見てください。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 32,
+   "kanji": "歌う",
+   "reading": "うたう",
+   "pos": "動詞",
+   "meaning": "唱歌",
+   "example": "歌を歌います。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 33,
+   "kanji": "海",
+   "reading": "うみ",
+   "pos": "名詞",
+   "meaning": "海",
+   "example": "海で泳ぎます。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 34,
+   "kanji": "売る",
+   "reading": "うる",
+   "pos": "動詞",
+   "meaning": "賣",
+   "example": "果物を売っています。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 35,
+   "kanji": "絵",
+   "reading": "え",
+   "pos": "名詞",
+   "meaning": "畫",
+   "example": "絵を描きます。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 36,
+   "kanji": "映画",
+   "reading": "えいが",
+   "pos": "名詞",
+   "meaning": "電影",
+   "example": "映画を見ます。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 37,
+   "kanji": "英語",
+   "reading": "えいご",
+   "pos": "名詞",
+   "meaning": "英語",
+   "example": "英語を話します。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 38,
+   "kanji": "駅",
+   "reading": "えき",
+   "pos": "名詞",
+   "meaning": "車站",
+   "example": "駅はどこですか。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 39,
+   "kanji": "",
+   "reading": "エレベーター",
+   "pos": "名詞",
+   "meaning": "電梯",
+   "example": "エレベーターに乗ります。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  },
+  {
+   "no": 40,
+   "kanji": "大きい",
+   "reading": "おおきい",
+   "pos": "い形容詞",
+   "meaning": "大的",
+   "example": "大きい家です。",
+   "exampleTranslation": "",
+   "page": 4,
+   "tags": [
+    "N5"
+   ]
+  }
+ ]
+}
