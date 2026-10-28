@@ -49,6 +49,10 @@ begin
       create policy "own rows update" on public.%1$I for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
       -- 不開放 delete：App 一律用軟刪除（deleted = true）同步到其他裝置
 
+      -- 新版 Supabase 專案的新資料表預設不開放給 Data API，要明確授權給登入的使用者；未登入（anon）一律不給
+      grant select, insert, update on public.%1$I to authenticated;
+      revoke all on public.%1$I from anon;
+
       drop trigger if exists %1$s_lww on public.%1$I;
       create trigger %1$s_lww before insert or update on public.%1$I
         for each row execute function public.lww_guard();

@@ -58,9 +58,9 @@ Git：6 個 commit，在 `main` 分支，**還沒 push**（也沒有設定 remot
 
 **待你處理**
 1. ✅ ~~把這個專案移到你想放的資料夾~~：已移到 `C:\Users\Me\Downloads\JP APP`
-2. **建立 Supabase 專案**：supabase.com → New project（Region 選 Tokyo）
-3. **建表**：SQL Editor → 貼上 `supabase/schema.sql` → Run
-4. **填金鑰**：複製 `.env.example` 為 `.env`，填 `VITE_SUPABASE_URL` 與 `VITE_SUPABASE_ANON_KEY`（Project Settings → API）
+2. ✅ ~~建立 Supabase 專案~~
+3. ⚠️ **建表：請再跑一次 `supabase/schema.sql`**：6 個資料表都建好了，但新版 Supabase 專案預設不開放新資料表給 API，登入後同步會被拒絕（`permission denied`）。schema.sql 已補上授權（`grant ... to authenticated`），可以重複執行：SQL Editor → 貼上整份 → Run
+4. ✅ ~~填金鑰~~：`.env` 已填好（publishable key），確認不會進 git，打包後也確實切換成 Supabase 同步
 5. **設定登入導回網址**：Authentication → URL Configuration → Redirect URLs 加 `http://localhost:5173/`（部署後再加 GitHub Pages 網址）
 6. **本機試登入**：`npm run dev` → 右上角「未登入」→ 輸入 Email → 用同一個瀏覽器開信中連結
 7. **建立 GitHub repo**（例如 `nihongo-tango`）

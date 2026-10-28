@@ -162,11 +162,12 @@ python scripts/convert_doc.py data/期中考.docx -o data/out/midterm.csv
    - 會建立 6 個資料表，並開啟 Row Level Security：每個人只能讀寫自己的資料
 4. 左側 **Project Settings → API**（或 **Data API**），複製：
    - **Project URL**（`https://xxxx.supabase.co`）
-   - **anon public** key（`eyJ...` 開頭；這個 key 本來就是公開給前端用的，安全性靠 RLS）
+   - **Publishable key**（`sb_publishable_...` 開頭；舊專案叫 **anon public**，`eyJ...` 開頭，兩種都可以。這個 key 本來就是公開給前端用的，安全性靠 RLS）
+   - ⚠️ 不要用 **Secret key**／**service_role**，那個能繞過 RLS
 5. 在專案根目錄複製 `.env.example` 為 `.env`，填入：
    ```
    VITE_SUPABASE_URL=https://xxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJ...
+   VITE_SUPABASE_ANON_KEY=sb_publishable_...
    ```
    `.env` 已在 `.gitignore`，不會被 commit。
 6. 左側 **Authentication → URL Configuration**：
