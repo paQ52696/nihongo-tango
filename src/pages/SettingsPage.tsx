@@ -46,7 +46,7 @@ export function SettingsPage() {
                 語速 {s.ttsRate.toFixed(1)}
               </label>
               <input id="rate" type="range" min={0.5} max={1.5} step={0.1} value={s.ttsRate} onChange={(e) => updateSettings({ ttsRate: Number(e.target.value) })} className="flex-1 accent-sakura-500" />
-              <button className="btn-secondary" onClick={() => playWord({ kanji: '学校', reading: 'がっこう' }, s.ttsRate)}>
+              <button className="btn-secondary" onClick={() => playWord({ kanji: '勉強', reading: 'べんきょう' }, s.ttsRate)}>
                 🔊 試聽
               </button>
             </div>
