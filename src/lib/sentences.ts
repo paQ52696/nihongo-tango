@@ -44,7 +44,10 @@ const PARTICLE_TRAPS: Record<string, string[]> = {
 }
 
 /** 結尾是助詞但不是助詞的固定說法 */
-const NOT_PARTICLE = new Set(['こんにちは', 'こんばんは', 'では', 'それでは', 'じゃあ', 'なに', '何', 'いっしょに', '一緒に', 'ほんとうに', '本当に', 'すぐに', 'とくに', '特に', 'まだ', 'もう', 'どうも', 'いつも', 'でも', 'ても', 'から'])
+const NOT_PARTICLE = new Set([
+  'こんにちは', 'こんばんは', 'では', 'それでは', 'じゃあ', 'なに', '何', 'いっしょに', '一緒に', 'ほんとうに', '本当に', 'すぐに', 'とくに', '特に',
+  'まだ', 'もう', 'どうも', 'いつも', 'でも', 'ても', 'から', 'それから', 'これから', 'あとで', '後で', '次に', 'つぎに', 'すみませんが',
+])
 
 /** 找出文節結尾的助詞：回傳 [文節位置, 助詞] */
 export function particleSlots(w: Pick<Word, 'kanji' | 'chunks'>): { index: number; particle: string }[] {
@@ -55,7 +58,7 @@ export function particleSlots(w: Pick<Word, 'kanji' | 'chunks'>): { index: numbe
     const p = PARTICLES.find((p) => c.endsWith(p) && c.length > p.length)
     if (!p) return
     // 動詞・形容詞的語尾（〜ます、〜です、〜て）不會以這些助詞結尾，但「〜ても」「〜でも」要排除
-    if (/(て|で)も$/.test(c) || /(ます|です|ました|でした)(から|が)$/.test(c)) return
+    if (/(て|で)も$/.test(c) || /(ます|です|ました|でした|ません)(から|が)$/.test(c)) return
     out.push({ index, particle: p })
   })
   return out

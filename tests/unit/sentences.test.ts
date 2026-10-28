@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { checkSentence, diffSentence, particleQuestion, particleSlots, reorderTiles, shuffleTiles, splitChunks, MAX_TILES } from '../../src/lib/sentences'
-import { masuDistractors, masuForm, teDistractors, teForm, verbGroup, verbInfo } from '../../src/lib/conjugate'
+import { convertVerb, masuDistractors, masuForm, teDistractors, teForm, teRule, verbGroup, verbInfo } from '../../src/lib/conjugate'
 import { GRAMMAR_SETS } from '../../src/data/grammar'
 import { buildQuestion, canAsk } from '../../src/lib/questions'
 import { makeRng } from '../../src/lib/distractors'
@@ -149,6 +149,25 @@ describe('動詞變化', () => {
       expect(new Set(q.options.map((o) => o.text)).size).toBe(4)
       expect(q.explain).toContain('第 I 類')
     }
+  })
+
+  it('講解頁的て形轉換器：ます形、辭書形、漢字、手動分組', () => {
+    const r = (s: string, g?: 'I' | 'II' | 'III') => {
+      const v = convertVerb(s, g)
+      return v && [teForm(v), teRule(v)]
+    }
+    expect(r('かきます')).toEqual(['かいて', '第 I 類：き → いて'])
+    expect(r('書きます')).toEqual(['書いて', '第 I 類：き → いて'])
+    expect(r('行きます')).toEqual(['行って', '第 I 類例外：行きます → 行って'])
+    expect(r('いきます')).toEqual(['いって', '第 I 類例外：行きます → 行って'])
+    expect(r('たべます')).toEqual(['たべて', '第 II 類：去掉「ます」加「て」'])
+    expect(r('みます', 'II')).toEqual(['みて', '第 II 類：去掉「ます」加「て」'])
+    expect(r('はなします')).toEqual(['はなして', '第 I 類：し → して']) // 自動判斷成 I（假名短的します）
+    expect(r('べんきょうします')).toEqual(['べんきょうして', '第 III 類：します → して'])
+    expect(r('きます')).toEqual(['きて', '第 III 類：来ます → 来て'])
+    expect(r('のむ')).toEqual(['のんで', '第 I 類：み・び・に → んで'])
+    expect(r('かえる', 'I')).toEqual(['かえって', '第 I 類：い・ち・り → って'])
+    expect(convertVerb('すし')).toBeNull() // 不是〜ます、也不是う段結尾
   })
 
   it('只有詞性是動詞的單字才出變化題', () => {

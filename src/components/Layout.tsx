@@ -6,6 +6,7 @@ import { Modal } from './ui'
 const NAV = [
   { to: '/', label: '首頁', icon: '🏠', end: true },
   { to: '/practice', label: '練習', icon: '✏️' },
+  { to: '/learn', label: '講解', icon: '💡' },
   { to: '/exam', label: '模擬考', icon: '📝' },
   { to: '/mistakes', label: '錯題本', icon: '📕' },
   { to: '/stats', label: '統計', icon: '📊' },
@@ -13,7 +14,7 @@ const NAV = [
   { to: '/import', label: '匯入', icon: '📥' },
   { to: '/settings', label: '設定', icon: '⚙️' },
 ]
-const MOBILE_NAV = ['/', '/practice', '/mistakes', '/stats', '/settings']
+const MOBILE_NAV = ['/', '/practice', '/learn', '/mistakes', '/stats', '/settings']
 
 export function Layout() {
   return (
@@ -49,7 +50,7 @@ export function Layout() {
         <Outlet />
       </main>
       <nav className="mobile-nav safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sakura-100 bg-white/95 backdrop-blur md:hidden dark:border-ink-700 dark:bg-ink-800/95" aria-label="底部選單">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-6">
           {NAV.filter((n) => MOBILE_NAV.includes(n.to)).map((n) => (
             <NavLink
               key={n.to}

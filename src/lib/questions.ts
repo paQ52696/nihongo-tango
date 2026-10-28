@@ -191,15 +191,17 @@ export function buildQuestion(mode: QuestionMode, card: Pick<Card, 'id' | 'deckI
     }
     case 'conjugate': {
       const v = verbInfo(word)!
-      const te = rng() < 0.7
+      // 單字庫存ます形（課本寫法）時一律問て形；存辭書形時 7 成問て形、3 成問ます形
+      const te = v.masu ? true : rng() < 0.7
       const answer = te ? teForm(v) : masuForm(v)
+      const shown = v.masu ?? { surface: v.surface, reading: v.dict }
       return {
         ...base,
-        prompt: v.surface === v.dict ? v.dict : `${v.surface}（${v.dict}）`,
+        prompt: shown.surface === shown.reading ? shown.reading : `${shown.surface}（${shown.reading}）`,
         promptSub: te ? '→ て形' : '→ ます形',
         answer,
         options: withAnswer(answer, plain(te ? teDistractors(v, rng) : masuDistractors(v, rng))),
-        explain: `${GROUP_LABELS[v.group]}：${v.dict} → ${masuForm(v)}・${teForm(v)}`,
+        explain: v.masu ? `${GROUP_LABELS[v.group]}：${v.masu.reading} → ${teForm(v)}` : `${GROUP_LABELS[v.group]}：${v.dict} → ${masuForm(v)}・${teForm(v)}`,
       }
     }
     case 'ja2zh':

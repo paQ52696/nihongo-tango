@@ -13,6 +13,7 @@ import { StatsPage } from './pages/StatsPage'
 import { WordsPage } from './pages/WordsPage'
 import { ImportPage } from './pages/ImportPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { LearnPage } from './pages/LearnPage'
 import { removeLegacyDemoOnce, seedDemoIfEmpty } from './db/demo'
 import { startSync } from './sync'
 import { applyTheme, loadAudioManifest } from './lib/browser'
@@ -48,6 +49,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="words" element={<WordsPage />} />
           <Route path="import" element={<ImportPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="learn" element={<LearnPage />} />
           <Route path="*" element={<HomePage />} />
         </Route>
       </Routes>
