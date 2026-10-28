@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, CalendarDays, Download, Plus, Volume2 } from 'lucide-react'
+import { ArrowRight, CalendarDays, Download, Plus } from 'lucide-react'
+import { SpeakButton } from '../components/SpeakButton'
 import { useAppData, useSettings, type DeckStats } from '../hooks/useData'
 import { createDeck, updateDeck } from '../db/repo'
 import { DeckForm } from '../components/DeckForm'
@@ -8,7 +9,7 @@ import { Modal, pct } from '../components/ui'
 import { computeStreak, dailyCounts } from '../lib/stats'
 import { dateKey } from '../lib/dates'
 import { displaySurface, primaryReading } from '../lib/distractors'
-import { audioSupported, playWord } from '../lib/browser'
+import { audioSupported } from '../lib/browser'
 import { deckGlyph, tapeColor } from '../lib/deckStyle'
 import type { Deck, Word } from '../types'
 
@@ -183,13 +184,13 @@ function WordOfTheDay({ word, rate }: { word: Word | null; rate?: number }) {
       {word ? (
         <>
           {audioSupported() && (
-            <button
-              className="absolute top-4 right-4 grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-surface/60 transition-colors hover:bg-surface hover:text-ink"
-              onClick={() => playWord(word, rate)}
-              aria-label={`播放「${surface}」的發音`}
-            >
-              <Volume2 size={20} aria-hidden />
-            </button>
+            <SpeakButton
+              word={word}
+              rate={rate}
+              size={20}
+              className="wotd-play absolute top-4 right-4 grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-surface/60 transition hover:bg-surface hover:text-ink active:scale-90"
+              label={`播放「${surface}」的發音`}
+            />
           )}
           <div className="mt-4">
             {reading && reading !== surface && <p className="jp text-sm opacity-75">{reading}</p>}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { deckGlyph } from '../lib/deckStyle'
 import { FolderOpen } from 'lucide-react'
 import { useAppData } from '../hooks/useData'
 import { createDeck, importDrafts, type DupDecision, type ImportResult } from '../db/repo'
@@ -182,7 +183,7 @@ export function ImportPage() {
               <option value="__new">＋ 建立新的單字庫</option>
               {data.decks.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.icon} {d.name}
+                  {deckGlyph(d)}　{d.name}
                 </option>
               ))}
             </select>

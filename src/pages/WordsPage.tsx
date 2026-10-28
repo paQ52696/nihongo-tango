@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Pencil, Star, Tag, Volume2 } from 'lucide-react'
+import { deckGlyph } from '../lib/deckStyle'
+import { Pencil, Star, Tag } from 'lucide-react'
+import { SpeakButton } from '../components/SpeakButton'
 import { useAppData } from '../hooks/useData'
 import { batchTags, copyWordsToDeck, removeFromDeck, toggleFavorite, updateWord, addWordToDeck, notifyChange } from '../db/repo'
 import { ConfirmButton, DeckTag, Empty, Modal, PageTitle } from '../components/ui'
 import { anyToHiragana, normalizeReading } from '../lib/kana'
 import { masteryLevel } from '../lib/srs'
 import { MASTERY_COLORS, MASTERY_LABELS } from '../components/ui'
-import { audioSupported, playWord } from '../lib/browser'
+import { audioSupported } from '../lib/browser'
 import type { Word } from '../types'
 
 const PAGE = 100
@@ -56,7 +58,7 @@ export function WordsPage() {
           <option value="all">全部單字庫</option>
           {data.decks.map((d) => (
             <option key={d.id} value={d.id}>
-              {d.icon} {d.name}
+              {deckGlyph(d)}　{d.name}
             </option>
           ))}
         </select>
@@ -154,9 +156,7 @@ export function WordsPage() {
                     </div>
                   </div>
                   {audioSupported() && (
-                    <button className="btn-ghost hidden w-11 px-0 sm:inline-flex" onClick={() => playWord(w)} aria-label="發音">
-                      <Volume2 size={18} aria-hidden />
-                    </button>
+                    <SpeakButton word={w} className="btn-ghost hidden w-11 px-0 sm:inline-flex" />
                   )}
                   <button className={`btn-ghost w-11 px-0 ${w.favorite ? 'text-accent' : 'text-muted'}`} onClick={() => toggleFavorite(w.id)} aria-label={w.favorite ? '取消收藏' : '收藏'} aria-pressed={w.favorite}>
                     <Star size={18} fill={w.favorite ? 'currentColor' : 'none'} aria-hidden />
@@ -202,7 +202,7 @@ export function WordsPage() {
                   setSelected(new Set())
                 }}
               >
-                {d.icon} {d.name}
+                {deckGlyph(d)}　{d.name}
               </button>
             ))}
         </div>

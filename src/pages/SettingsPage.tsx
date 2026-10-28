@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Check, Download, Upload, Volume2 } from 'lucide-react'
+import { Check, Download, Upload } from 'lucide-react'
+import { SpeakButton } from '../components/SpeakButton'
+
+const TRY_WORD = { kanji: '勉強', reading: 'べんきょう' }
 import { useSettings } from '../hooks/useData'
 import { updateSettings } from '../db/repo'
 import { exportAll, restoreAll, wipeAll } from '../db/backup'
 import { ConfirmButton, PageTitle, Segmented, Toggle } from '../components/ui'
 import { AccountPanel } from '../components/Layout'
-import { canPromptInstall, downloadText, getTheme, audioCreditText, audioSupported, canSpeakJapanese, hasAudioFiles, hasJapaneseVoice, isIOS, isSafari, isStandalone, onInstallAvailable, onVoicesChanged, playWord, promptInstall, setTheme, type Theme } from '../lib/browser'
+import { canPromptInstall, downloadText, getTheme, audioCreditText, audioSupported, canSpeakJapanese, hasAudioFiles, hasJapaneseVoice, isIOS, isSafari, isStandalone, onInstallAvailable, onVoicesChanged, promptInstall, setTheme, type Theme } from '../lib/browser'
 import { dateKey } from '../lib/dates'
 
 export function SettingsPage() {
@@ -45,10 +48,9 @@ export function SettingsPage() {
                 語速 {s.ttsRate.toFixed(1)}
               </label>
               <input id="rate" type="range" min={0.5} max={1.5} step={0.1} value={s.ttsRate} onChange={(e) => updateSettings({ ttsRate: Number(e.target.value) })} className="flex-1 accent-accent" />
-              <button className="btn-secondary" onClick={() => playWord({ kanji: '勉強', reading: 'べんきょう' }, s.ttsRate)}>
-                <Volume2 size={16} aria-hidden />
+              <SpeakButton word={TRY_WORD} rate={s.ttsRate} className="btn-secondary" size={16} label="試聽">
                 試聽
-              </button>
+              </SpeakButton>
             </div>
             {hasAudioFiles() && (
               <p className="text-xs text-muted" data-testid="audio-credit">

@@ -25,7 +25,18 @@ test('每一頁的按鈕都夠大、沒有 emoji', async ({ page, browserName })
         .map((e) => `${e.tagName} ${(e as HTMLElement).innerText?.slice(0, 20) || e.getAttribute('aria-label')} ${Math.round(e.getBoundingClientRect().height)}px`),
     )
     expect(small, p).toEqual([])
-    const text = (await page.locator('body').innerText()).replace(/★/g, '') // ★ 是 N5 排序題的符號，不是圖示
+    // 下拉選單的選項（單字庫名稱前的圖示）也要檢查
+    const text = ((await page.locator('body').innerText()) + (await page.locator('option').allTextContents()).join('')).replace(/★/g, '') // ★ 是 N5 排序題的符號，不是圖示
     expect(text.match(EMOJI)?.[0] ?? null, p).toBeNull()
   }
+})
+
+test('發音按鈕：按下後顯示播放中，唸完恢復', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Chromium 涵蓋')
+  await openApp(page)
+  await page.goto('/#/settings')
+  const btn = page.getByRole('button', { name: '試聽' })
+  await btn.click()
+  await expect(btn).toHaveAttribute('data-playing', 'true')
+  await expect(btn).not.toHaveAttribute('data-playing', /.*/, { timeout: 16_000 })
 })

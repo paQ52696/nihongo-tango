@@ -40,8 +40,8 @@ export function hasJapaneseVoice(): boolean {
 // Chrome 會在唸完前把 utterance 回收掉而中斷，留一個參照
 let current: SpeechSynthesisUtterance | null = null
 
-/** 唸出日文。Safari 第一次必須由使用者點擊觸發，之後就能自動播放。 */
-export function speak(text: string, rate = 0.9): boolean {
+/** 唸出日文。Safari 第一次必須由使用者點擊觸發，之後就能自動播放。onDone：唸完或失敗時呼叫 */
+export function speak(text: string, rate = 0.9, onDone?: () => void): boolean {
   if (!ttsSupported() || !text) return false
   const v = japaneseVoice()
   // 語音清單已載入卻沒有日文：不要讓系統用中文／英文語音唸（漢字會唸成中文）
@@ -54,6 +54,7 @@ export function speak(text: string, rate = 0.9): boolean {
   current = u
   u.onend = u.onerror = () => {
     if (current === u) current = null
+    onDone?.()
   }
   if (synth.speaking || synth.pending) {
     // Windows Chrome：cancel() 後立刻 speak() 常常沒聲音，稍等一下再唸
@@ -107,9 +108,33 @@ export function canSpeakJapanese() {
   return hasAudioFiles() || hasJapaneseVoice()
 }
 
+// ---------- 正在播放哪個字（讓發音按鈕顯示播放中） ----------
+let playing: { key: string; id: number } | null = null
+let playSeq = 0
+const playListeners = new Set<() => void>()
+function setPlaying(p: typeof playing) {
+  playing = p
+  playListeners.forEach((f) => f())
+}
+/** 目前正在唸的字（audioKey），沒有在唸就是 null */
+export function playingKey() {
+  return playing?.key ?? null
+}
+export function onPlayingChange(fn: () => void) {
+  playListeners.add(fn)
+  return () => {
+    playListeners.delete(fn)
+  }
+}
+
 /** 唸一個單字：有 VOICEVOX 音檔就播音檔，否則用瀏覽器語音 */
 export function playWord(word: Pick<Word, 'kanji' | 'reading'>, rate = 0.9): boolean {
   const key = audioKey(word)
+  const id = ++playSeq
+  setPlaying({ key, id })
+  const done = () => playing?.id === id && setPlaying(null)
+  // 保險：事件沒觸發也不會一直顯示播放中
+  setTimeout(done, 15000)
   if (audioKeys.has(key) && typeof Audio !== 'undefined') {
     if (ttsSupported()) window.speechSynthesis.cancel()
     audioEl?.pause()
@@ -122,13 +147,19 @@ export function playWord(word: Pick<Word, 'kanji' | 'reading'>, rate = 0.9): boo
       a.playbackRate = r
     }
     audioEl = a
+    a.addEventListener('ended', done)
+    a.addEventListener('pause', done)
     a.play().catch((e: Error) => {
       // 自動播放被擋（Safari 第一次）不改用語音；檔案壞掉或抓不到才改用瀏覽器語音
-      if (e.name !== 'NotAllowedError' && audioEl === a) speak(speakTextFor(word), rate)
+      if (e.name !== 'NotAllowedError' && audioEl === a) {
+        if (!speak(speakTextFor(word), rate, done)) done()
+      } else done()
     })
     return true
   }
-  return speak(speakTextFor(word), rate)
+  const ok = speak(speakTextFor(word), rate, done)
+  if (!ok) done()
+  return ok
 }
 
 // ---------- 主題（每台裝置各自設定，不同步） ----------

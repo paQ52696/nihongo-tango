@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { PencilLine, Volume2 } from 'lucide-react'
+import { deckGlyph } from '../lib/deckStyle'
+import { PencilLine } from 'lucide-react'
+import { SpeakButton } from '../components/SpeakButton'
 import { useAppData } from '../hooks/useData'
 import { DeckTag, Empty, PageTitle, Segmented } from '../components/ui'
 import { BarList } from '../components/charts'
 import { ERROR_LABELS } from '../lib/errorTypes'
 import { MISTAKE_CLEAR_STREAK } from '../lib/stats'
 import type { ErrorType } from '../types'
-import { audioSupported, playWord } from '../lib/browser'
+import { audioSupported } from '../lib/browser'
 
 export function MistakesPage() {
   const data = useAppData()
@@ -47,7 +49,7 @@ export function MistakesPage() {
           <option value="all">全部單字庫</option>
           {data.decks.map((d) => (
             <option key={d.id} value={d.id}>
-              {d.icon} {d.name}
+              {deckGlyph(d)}　{d.name}
             </option>
           ))}
         </select>
@@ -81,9 +83,7 @@ export function MistakesPage() {
                       <span className="jp text-lg text-ok">{w.reading}</span>
                       <span className="text-sm">{w.meaning}</span>
                       {audioSupported() && (
-                        <button className="btn-ghost w-11 px-0" aria-label="發音" onClick={() => playWord(w)}>
-                          <Volume2 size={18} aria-hidden />
-                        </button>
+                        <SpeakButton word={w} />
                       )}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">

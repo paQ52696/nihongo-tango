@@ -149,6 +149,26 @@ body {
   opacity: 0.9;
 }
 
+/* 發音按鈕唸的時候：反轉成深色、喇叭跳動 */
+.is-playing,
+.is-playing:hover {
+  transition: none; /* 按下立刻反轉，唸完再慢慢恢復 */
+  background-color: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+@keyframes speaker-wave {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.22);
+  }
+}
+.speaker-wave {
+  animation: speaker-wave 0.35s ease-in-out infinite alternate;
+}
+
 /* 整頁唯一的朱色實心按鈕 */
 @utility btn-seal {
   @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border-[1.5px] border-ink bg-accent px-5 text-base font-bold text-[var(--on-accent)] transition-transform hover:bg-accent-hover active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
@@ -156,11 +176,17 @@ body {
 }
 /* 描邊膠囊按鈕：hover 反轉成深色 */
 @utility btn-outline {
-  @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-ink bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-ink hover:text-surface disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-ink bg-surface px-4 text-sm font-medium text-ink hover:bg-ink hover:text-surface active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-50;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    transform 0.08s,
+    box-shadow 0.08s;
 }
 /* 文字按鈕 */
 @utility btn-text {
-  @apply inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm text-muted underline-offset-4 transition-colors hover:text-ink hover:underline;
+  @apply inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm text-muted underline-offset-4 transition hover:text-ink hover:underline active:scale-95;
 }
 
 /* 卡片：米白底、墨色邊框、硬陰影 */
@@ -170,7 +196,12 @@ body {
 }
 
 @utility btn {
-  @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    transform 0.08s,
+    box-shadow 0.08s;
 }
 /* 每頁的主要動作（一頁一個）：朱色實心＋硬陰影 */
 @utility btn-primary {
@@ -178,14 +209,17 @@ body {
   box-shadow: 3px 3px 0 var(--ink);
 }
 /* 其他按鈕：描邊膠囊，hover 反轉 */
+/* 按下去會往右下沉、陰影消失，像蓋印章 */
 @utility btn-secondary {
-  @apply btn border-[1.5px] border-ink bg-surface text-ink hover:bg-ink hover:text-surface;
+  @apply btn border-[1.5px] border-ink bg-surface text-ink hover:bg-ink hover:text-surface active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:shadow-none;
+  box-shadow: 2px 2px 0 var(--ink);
 }
 @utility btn-ghost {
-  @apply btn text-ink-2 hover:bg-pattern-line;
+  @apply btn text-ink-2 hover:bg-pattern-line active:scale-90 active:bg-line-soft;
 }
 @utility btn-danger {
-  @apply btn border-[1.5px] border-accent bg-surface text-accent hover:bg-accent hover:text-[var(--on-accent)];
+  @apply btn border-[1.5px] border-accent bg-surface text-accent hover:bg-accent hover:text-[var(--on-accent)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
+  box-shadow: 2px 2px 0 var(--accent);
 }
 
 @utility input {
@@ -272,4 +306,11 @@ body {
     padding-block: 10px;
     margin-block: -10px;
   }
+}
+
+/* 今日の一語在深色卡片上：唸的時候反轉成米白 */
+.wotd-play.is-playing {
+  background-color: var(--surface);
+  color: var(--ink);
+  border-color: var(--surface);
 }

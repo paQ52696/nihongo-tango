@@ -30,7 +30,7 @@ export function StatsPage() {
             <option value="all">全部單字庫</option>
             {data.decks.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.icon} {d.name}
+                {deckGlyph(d)}　{d.name}
               </option>
             ))}
           </select>

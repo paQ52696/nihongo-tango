@@ -1,7 +1,8 @@
 // 練習進行中：出題、作答、回饋動畫、自評、鍵盤操作
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { bind, unbind } from 'wanakana'
-import { CircleCheck, CircleX, Volume2, X } from 'lucide-react'
+import { CircleCheck, CircleX, X } from 'lucide-react'
+import { SpeakButton } from './SpeakButton'
 import type { Question } from '../lib/questions'
 import { INTERACTION, MODE_HINTS, checkTyping } from '../lib/questions'
 import { checkSentence, diffSentence } from '../lib/sentences'
@@ -250,9 +251,7 @@ export function PracticeRunner({
           </p>
         )}
         {q.mode === 'listening' ? (
-          <button className="btn-secondary mx-auto my-4 h-24 w-24 rounded-full" onClick={say} aria-label="播放發音" data-testid="play-audio">
-            <Volume2 size={40} strokeWidth={1.75} aria-hidden />
-          </button>
+          <SpeakButton word={w} rate={settings.ttsRate} className="btn-secondary mx-auto my-4 h-24 w-24 rounded-full" size={40} label="播放發音" testId="play-audio" />
         ) : (
           <div className={`jp break-words font-bold ${promptSize}`} data-testid="prompt">
             {zhPrompt ? <span className="font-sans">{q.prompt}</span> : q.prompt}
@@ -413,9 +412,7 @@ export function PracticeRunner({
             {w.pos && <span className="rounded border border-line-soft px-1.5 text-xs text-muted">{w.pos}</span>}
             <span>{w.meaning}</span>
             {audioSupported() && (
-              <button className="btn-ghost w-11 px-0" onClick={say} aria-label="重播發音">
-                <Volume2 size={18} aria-hidden />
-              </button>
+              <SpeakButton word={w} rate={settings.ttsRate} label="重播發音" />
             )}
           </div>
           )}
