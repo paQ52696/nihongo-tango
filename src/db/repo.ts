@@ -1,4 +1,5 @@
 // 所有寫入都經過這裡：自動補 updated_at、標記 _dirty=1（待上傳），並通知同步引擎
+import Dexie from 'dexie'
 import { v4 as uuidv4, v5 as uuidv5 } from 'uuid'
 import { db } from './schema'
 import type { Card, Deck, DeckEntry, ErrorType, QuestionMode, Rating, ReviewLog, Settings, SyncFields, Word } from '../types'
@@ -29,7 +30,12 @@ export function onLocalChange(fn: Listener) {
   return () => listeners.delete(fn)
 }
 export function notifyChange() {
-  listeners.forEach((fn) => fn())
+  // 在交易裡被呼叫時（例如示範資料一次寫入），等交易提交後再通知：
+  // 否則監聽者的讀取會跑進這個交易，碰到交易沒包含的資料表就會丟 NotFoundError
+  const fire = () => Dexie.ignoreTransaction(() => listeners.forEach((fn) => fn()))
+  const tx = Dexie.currentTransaction
+  if (tx) tx.on('complete', fire)
+  else fire()
 }
 
 export function stamp<T extends SyncFields>(row: Omit<T, 'updated_at' | '_dirty'> & Partial<SyncFields>): T {
