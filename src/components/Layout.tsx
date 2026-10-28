@@ -1,40 +1,41 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { BookX, Check, ChartColumn, CircleAlert, CloudOff, HardDrive, House, Lightbulb, PencilLine, RefreshCw, Settings, UserRound, type LucideIcon } from 'lucide-react'
 import { useSync, getEngine } from '../sync'
 import { Modal } from './ui'
 
-const NAV = [
-  { to: '/', label: '首頁', icon: '🏠', end: true },
-  { to: '/practice', label: '練習', icon: '✏️' },
-  { to: '/learn', label: '講解', icon: '💡' },
-  { to: '/exam', label: '模擬考', icon: '📝' },
-  { to: '/mistakes', label: '錯題本', icon: '📕' },
-  { to: '/stats', label: '統計', icon: '📊' },
-  { to: '/words', label: '單字', icon: '📚' },
-  { to: '/import', label: '匯入', icon: '📥' },
-  { to: '/settings', label: '設定', icon: '⚙️' },
+const NAV: { to: string; label: string; icon?: LucideIcon; end?: boolean }[] = [
+  { to: '/', label: '首頁', icon: House, end: true },
+  { to: '/practice', label: '練習', icon: PencilLine },
+  { to: '/learn', label: '講解', icon: Lightbulb },
+  { to: '/exam', label: '模擬考' },
+  { to: '/mistakes', label: '錯題本', icon: BookX },
+  { to: '/stats', label: '統計', icon: ChartColumn },
+  { to: '/words', label: '單字' },
+  { to: '/import', label: '匯入' },
+  { to: '/settings', label: '設定', icon: Settings },
 ]
 const MOBILE_NAV = ['/', '/practice', '/learn', '/mistakes', '/stats', '/settings']
 
 export function Layout() {
   return (
     <div className="min-h-screen pb-20 md:pb-8">
-      <header className="sticky top-0 z-30 border-b border-sakura-100 bg-sakura-50/85 backdrop-blur dark:border-ink-700 dark:bg-ink-900/85">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
-          <NavLink to="/" className="flex shrink-0 items-center gap-2 font-bold text-sakura-600 dark:text-sakura-300">
-            <span className="text-2xl" aria-hidden>
-              🌸
+      <header className="sticky top-0 z-30 border-b border-line-soft bg-[var(--header-bg)]">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2">
+          <NavLink to="/" className="flex min-h-11 shrink-0 items-center gap-2.5 text-ink">
+            <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-accent font-mincho text-xl font-extrabold text-[var(--on-accent)]" aria-hidden>
+              <span className="-rotate-4">単</span>
             </span>
-            <span className="jp hidden sm:inline">単語れんしゅう</span>
+            <span className="jp hidden font-display text-lg font-bold sm:inline">単語れんしゅう</span>
           </NavLink>
-          <nav className="hidden flex-1 items-center gap-1 overflow-x-auto md:flex" aria-label="主選單">
+          <nav className="hidden flex-1 flex-wrap items-center gap-1 md:flex" aria-label="主選單">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 end={n.end}
                 className={({ isActive }) =>
-                  `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors ${isActive ? 'bg-white font-semibold text-sakura-600 shadow-sm dark:bg-ink-800 dark:text-sakura-300' : 'text-ink-700 hover:bg-white/70 dark:text-lav-200 dark:hover:bg-ink-800'}`
+                  `inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3.5 text-sm transition-colors ${isActive ? 'bg-ink font-bold text-surface' : 'text-ink-2 hover:bg-pattern-line'}`
                 }
               >
                 {n.label}
@@ -49,21 +50,22 @@ export function Layout() {
       <main className="mx-auto max-w-6xl px-4 py-5">
         <Outlet />
       </main>
-      <nav className="mobile-nav safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sakura-100 bg-white/95 backdrop-blur md:hidden dark:border-ink-700 dark:bg-ink-800/95" aria-label="底部選單">
+      <nav className="mobile-nav safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line-soft bg-surface md:hidden" aria-label="底部選單">
         <div className="grid grid-cols-6">
-          {NAV.filter((n) => MOBILE_NAV.includes(n.to)).map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              end={n.end}
-              className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[11px] ${isActive ? 'font-semibold text-sakura-600 dark:text-sakura-300' : 'text-ink-600 dark:text-lav-300'}`}
-            >
-              <span className="text-lg" aria-hidden>
-                {n.icon}
-              </span>
-              {n.label}
-            </NavLink>
-          ))}
+          {NAV.filter((n) => MOBILE_NAV.includes(n.to)).map((n) => {
+            const Icon = n.icon!
+            return (
+              <NavLink
+                key={n.to}
+                to={n.to}
+                end={n.end}
+                className={({ isActive }) => `flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] ${isActive ? 'font-bold text-accent' : 'text-muted'}`}
+              >
+                <Icon size={20} strokeWidth={1.75} aria-hidden />
+                {n.label}
+              </NavLink>
+            )
+          })}
         </div>
       </nav>
       <FirstSyncDialog />
@@ -71,32 +73,33 @@ export function Layout() {
   )
 }
 
-const STATUS: Record<string, { label: string; dot: string }> = {
-  'local-only': { label: '僅本機', dot: 'bg-lav-300' },
-  'signed-out': { label: '未登入', dot: 'bg-lav-300' },
-  'needs-choice': { label: '等待選擇', dot: 'bg-amber-400' },
-  syncing: { label: '同步中', dot: 'bg-sky-400 animate-pulse' },
-  synced: { label: '已同步', dot: 'bg-emerald-400' },
-  offline: { label: '離線', dot: 'bg-amber-400' },
-  error: { label: '同步錯誤', dot: 'bg-red-500' },
+const STATUS: Record<string, { label: string; icon: LucideIcon; tone: string }> = {
+  'local-only': { label: '僅本機', icon: HardDrive, tone: 'border-line-soft text-muted' },
+  'signed-out': { label: '未登入', icon: UserRound, tone: 'border-line-soft text-muted' },
+  'needs-choice': { label: '等待選擇', icon: CircleAlert, tone: 'border-accent text-accent' },
+  syncing: { label: '同步中', icon: RefreshCw, tone: 'border-line-soft text-muted' },
+  synced: { label: '已同步', icon: Check, tone: 'border-ok text-ok' },
+  offline: { label: '離線', icon: CloudOff, tone: 'border-line-soft text-muted' },
+  error: { label: '同步錯誤', icon: CircleAlert, tone: 'border-accent text-accent' },
 }
 
 export function SyncBadge() {
   const s = useSync()
   const [open, setOpen] = useState(false)
   const st = STATUS[s.status]
+  const Icon = st.icon
   return (
     <>
       <button
         onClick={() => setOpen(true)}
         data-testid="sync-badge"
         data-status={s.status}
-        className="flex items-center gap-2 rounded-full border border-sakura-200 bg-white px-3 py-1 text-xs text-ink-700 shadow-sm hover:bg-sakura-100 dark:border-ink-600 dark:bg-ink-800 dark:text-lav-100"
+        className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border-[1.5px] bg-surface px-3.5 text-xs font-medium transition-colors hover:bg-pattern-line ${st.tone}`}
         aria-label={`同步狀態：${st.label}${s.pending && s.user ? `，${s.pending} 筆待上傳` : ''}`}
       >
-        <span className={`h-2 w-2 rounded-full ${st.dot}`} aria-hidden />
+        <Icon size={15} strokeWidth={2.25} className={s.status === 'syncing' ? 'animate-spin' : ''} aria-hidden />
         <span>{st.label}</span>
-        {s.pending > 0 && s.user && <span className="rounded-full bg-sakura-100 px-1.5 text-sakura-700 dark:bg-ink-600 dark:text-sakura-200">{s.pending} 待上傳</span>}
+        {s.pending > 0 && s.user && <span className="rounded-full border border-line-soft px-1.5 text-ink-2">{s.pending} 待上傳</span>}
       </button>
       <AccountDialog open={open} onClose={() => setOpen(false)} />
     </>

@@ -26,15 +26,63 @@
   --color-ink-800: #2a2142;
   --color-ink-700: #3a2f57;
   --color-ink-600: #54497a;
+  --font-display: 'Zen Maru Gothic', 'Noto Sans TC', 'Hiragino Maru Gothic ProN', 'Meiryo', sans-serif;
+  --font-mincho: 'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', 'MS Mincho', serif;
+}
+
+/* 和風主題的顏色：一律用變數，深色模式在 .dark 改值 */
+@theme inline {
+  --color-washi: var(--bg);
+  --color-pattern-line: var(--pattern-line);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line-soft: var(--line-soft);
+  --color-dash: var(--dash);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-grid-line: var(--grid-line);
+  --color-ok: var(--ok);
 }
 
 :root {
   color-scheme: light;
   --mastery-new: #e4dfee;
+  --bg: #f4f1ea; /* 和紙底色 */
+  --pattern-line: #eae3d4; /* 青海波紋路線條 */
+  --surface: #fffdf8; /* 卡片 */
+  --ink: #2b2925; /* 主文字、邊框 */
+  --ink-2: #4a463f;
+  --muted: #6f695e; /* 次要文字 */
+  --line-soft: #e4dccb; /* 淡邊框、卡片硬陰影 */
+  --dash: #d6cdbb; /* 虛線分隔 */
+  --accent: #c2410c; /* 朱色，唯一強調色 */
+  --accent-hover: #a3360a;
+  --on-accent: #ffffff;
+  --grid-line: #f5e1d7; /* 原稿用紙格線 */
+  --ok: #4f7a5a; /* 同步成功等狀態 */
+  --watermark: #f3e3da;
+  --header-bg: rgba(255, 253, 248, 0.92);
 }
 .dark {
   color-scheme: dark;
   --mastery-new: #4a3f6b;
+  --bg: #1f1d1a;
+  --pattern-line: #292622;
+  --surface: #2a2723;
+  --ink: #ede6d8;
+  --ink-2: #d4ccbc;
+  --muted: #a8a091;
+  --line-soft: #3b3730;
+  --dash: #4d483f;
+  --accent: #e2703c;
+  --accent-hover: #ec8a5c;
+  --on-accent: #1f1d1a;
+  --grid-line: #382c25;
+  --ok: #86b591;
+  --watermark: #3a2f29;
+  --header-bg: rgba(42, 39, 35, 0.92);
 }
 
 /* 練習／考試進行中：手機版隱藏底部選單，讓作答按鈕不被擋住 */
@@ -49,12 +97,62 @@ body,
 }
 
 body {
-  @apply bg-sakura-50 text-ink-900 font-sans antialiased dark:bg-ink-900 dark:text-lav-50;
+  @apply text-ink font-sans antialiased;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 青海波紋路 */
+.seigaiha {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 100% 150%, var(--bg) 24%, var(--pattern-line) 24%, var(--pattern-line) 27%, var(--bg) 27%, var(--bg) 36%, var(--pattern-line) 36%, var(--pattern-line) 39%, transparent 39%, transparent),
+    radial-gradient(circle at 0 150%, var(--bg) 24%, var(--pattern-line) 24%, var(--pattern-line) 27%, var(--bg) 27%, var(--bg) 36%, var(--pattern-line) 36%, var(--pattern-line) 39%, transparent 39%, transparent),
+    radial-gradient(circle at 50% 100%, var(--pattern-line) 10%, var(--bg) 10%, var(--bg) 23%, var(--pattern-line) 23%, var(--pattern-line) 27%, var(--bg) 27%, var(--bg) 43%, var(--pattern-line) 43%, var(--pattern-line) 47%, var(--bg) 47%, var(--bg) 63%, var(--pattern-line) 63%, var(--pattern-line) 67%, transparent 67%, transparent),
+    radial-gradient(circle at 100% 50%, var(--pattern-line) 10%, var(--bg) 10%, var(--bg) 23%, var(--pattern-line) 23%, var(--pattern-line) 27%, var(--bg) 27%, var(--bg) 43%, var(--pattern-line) 43%, var(--pattern-line) 47%, var(--bg) 47%, var(--bg) 63%, var(--pattern-line) 63%, var(--pattern-line) 67%, transparent 67%, transparent),
+    radial-gradient(circle at 0 50%, var(--pattern-line) 10%, var(--bg) 10%, var(--bg) 23%, var(--pattern-line) 23%, var(--pattern-line) 27%, var(--bg) 27%, var(--bg) 43%, var(--pattern-line) 43%, var(--pattern-line) 47%, var(--bg) 47%, var(--bg) 63%, var(--pattern-line) 63%, var(--pattern-line) 67%, transparent 67%, transparent);
+  background-size: 96px 48px;
 }
 
 .jp {
   font-family: var(--font-jp);
+}
+
+/* ---------- 和風元件 ---------- */
+
+/* 原稿用紙：28px 方格 */
+.genko {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* 朱色斜紋進度條 */
+.stripe-fill {
+  background-color: var(--accent);
+  background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.35) 0 6px, transparent 6px 12px);
+}
+
+/* 紙膠帶：底色由 --tape 指定 */
+.washi-tape {
+  background-color: var(--tape);
+  background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.3) 0 5px, transparent 5px 10px);
+  opacity: 0.9;
+}
+
+/* 整頁唯一的朱色實心按鈕 */
+@utility btn-seal {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border-[1.5px] border-ink bg-accent px-5 text-base font-bold text-[var(--on-accent)] transition-transform hover:bg-accent-hover active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+/* 描邊膠囊按鈕：hover 反轉成深色 */
+@utility btn-outline {
+  @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-ink bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-ink hover:text-surface disabled:cursor-not-allowed disabled:opacity-50;
+}
+/* 文字按鈕 */
+@utility btn-text {
+  @apply inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm text-muted underline-offset-4 transition-colors hover:text-ink hover:underline;
 }
 
 @utility card {
