@@ -118,7 +118,7 @@ export function AccountPanel() {
     return (
       <div className="space-y-2 text-sm">
         <p>目前是<strong>僅本機模式</strong>：所有功能都能用，資料存在這台裝置的瀏覽器裡。</p>
-        <p className="text-ink-600 dark:text-lav-300">要跨裝置同步，請依照 README 建立 Supabase 專案並設定金鑰。在那之前可以用「設定 → 資料備份」把資料搬到其他裝置。</p>
+        <p className="text-muted">要跨裝置同步，請依照 README 建立 Supabase 專案並設定金鑰。在那之前可以用「設定 → 資料備份」把資料搬到其他裝置。</p>
       </div>
     )
 
@@ -127,14 +127,14 @@ export function AccountPanel() {
       <div className="space-y-3 text-sm">
         <p>
           已登入：<strong data-testid="user-email">{s.user.email}</strong>
-          {s.backendKind === 'mock' && <span className="ml-2 rounded bg-amber-100 px-1.5 text-amber-800">模擬雲端</span>}
+          {s.backendKind === 'mock' && <span className="ml-2 rounded bg-accent-soft px-1.5 text-accent">模擬雲端</span>}
         </p>
         <p>
           狀態：{STATUS[s.status].label}
           {s.pending > 0 && `（${s.pending} 筆待上傳）`}
-          {s.lastSyncedAt && <span className="block text-ink-600 dark:text-lav-300">上次同步：{new Date(s.lastSyncedAt).toLocaleString('zh-TW')}</span>}
+          {s.lastSyncedAt && <span className="block text-muted">上次同步：{new Date(s.lastSyncedAt).toLocaleString('zh-TW')}</span>}
         </p>
-        {s.error && <p className="text-red-600">{s.error}</p>}
+        {s.error && <p className="text-accent">{s.error}</p>}
         <div className="flex flex-wrap gap-2">
           <button className="btn-primary" data-testid="sync-now" onClick={() => getEngine().syncNow()}>
             立即同步
@@ -177,8 +177,8 @@ export function AccountPanel() {
           使用 Google 登入
         </button>
       </div>
-      {msg && <p className="text-emerald-700 dark:text-emerald-300">{msg}</p>}
-      {err && <p className="text-red-600">{err}</p>}
+      {msg && <p className="text-ok">{msg}</p>}
+      {err && <p className="text-accent">{err}</p>}
     </form>
   )
 }
@@ -204,13 +204,13 @@ function FirstSyncDialog() {
     <Modal open onClose={() => {}} title="第一次同步">
       <p className="mb-4 text-sm">這台裝置和雲端都已經有資料了。要怎麼處理？</p>
       <div className="grid gap-3">
-        <button className="btn-primary justify-start py-3 text-left" disabled={busy} onClick={() => choose('merge')} data-testid="first-sync-merge">
+        <button className="btn-primary justify-start rounded-2xl py-3 text-left" disabled={busy} onClick={() => choose('merge')} data-testid="first-sync-merge">
           <span>
             <strong className="block">合併（建議）</strong>
             <span className="text-xs opacity-90">兩邊的單字庫、進度、作答紀錄都保留；同一筆資料以較新的為準。</span>
           </span>
         </button>
-        <button className="btn-secondary justify-start py-3 text-left" disabled={busy} onClick={() => choose('remote')} data-testid="first-sync-remote">
+        <button className="btn-secondary justify-start rounded-2xl py-3 text-left" disabled={busy} onClick={() => choose('remote')} data-testid="first-sync-remote">
           <span>
             <strong className="block">以雲端為準</strong>
             <span className="text-xs opacity-90">清除這台裝置上的資料，改用雲端的資料。</span>

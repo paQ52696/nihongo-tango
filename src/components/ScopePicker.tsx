@@ -1,6 +1,7 @@
 // 練習／模擬考共用：選單字庫（可多選）與範圍
 import type { AppData } from '../hooks/useData'
 import { SCOPE_LABELS, inScope, type Scope } from '../lib/session'
+import { deckGlyph, tapeColor } from '../lib/deckStyle'
 
 export interface ScopeValue {
   deckIds: string[]
@@ -67,7 +68,7 @@ export function ScopePicker({ value, onChange, data }: { value: ScopeValue; onCh
   }
   const toggleIn = (arr: string[], x: string) => (arr.includes(x) ? arr.filter((y) => y !== x) : [...arr, x])
   const chip = (active: boolean) =>
-    `chip ${active ? 'border-sakura-400 bg-sakura-100 font-semibold text-sakura-700 dark:border-sakura-400 dark:bg-ink-600 dark:text-sakura-200' : 'border-sakura-200 bg-white hover:bg-sakura-50 dark:border-ink-600 dark:bg-ink-800 dark:hover:bg-ink-700'}`
+    `chip ${active ? 'border-ink bg-ink font-bold text-surface' : 'border-line-soft bg-surface text-ink-2 hover:border-ink'}`
 
   const kinds: { kind: Scope['kind']; hint?: string; disabled?: boolean }[] = [
     { kind: 'all' },
@@ -87,8 +88,10 @@ export function ScopePicker({ value, onChange, data }: { value: ScopeValue; onCh
           {data.decks.map((d) => {
             const active = value.deckIds.includes(d.id)
             return (
-              <button key={d.id} type="button" aria-pressed={active} onClick={() => toggleDeck(d.id)} className={chip(active)} style={active ? { borderColor: d.color } : undefined} data-testid="deck-chip">
-                <span aria-hidden>{d.icon}</span>
+              <button key={d.id} type="button" aria-pressed={active} onClick={() => toggleDeck(d.id)} className={chip(active)} data-testid="deck-chip">
+                <span className="grid h-6 w-6 place-items-center rounded-full font-mincho text-xs font-extrabold text-ink" style={{ background: tapeColor(d) }} aria-hidden>
+                  {deckGlyph(d)}
+                </span>
                 {d.name}
               </button>
             )
@@ -165,7 +168,7 @@ export function ScopePicker({ value, onChange, data }: { value: ScopeValue; onCh
             })}
           </div>
         )}
-        <p className="mt-2 text-xs text-ink-600 dark:text-lav-300" data-testid="scope-count">
+        <p className="mt-2 text-xs text-muted" data-testid="scope-count">
           符合範圍的單字：{countInScope(value, data)} 個
         </p>
       </fieldset>

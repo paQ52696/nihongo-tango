@@ -6,6 +6,7 @@ import type { Card, Deck, DeckEntry, ErrorType, QuestionMode, Rating, ReviewLog,
 import { newCardFields, schedule, examAdjust } from '../lib/srs'
 import { daysUntil } from '../lib/dates'
 import { wordKey, type DraftCheck } from '../lib/importer'
+import { DECK_GLYPHS, TAPE_COLORS } from '../lib/deckStyle'
 
 const NS = '6f1c2a4e-8b7d-4c3a-9e5f-1a2b3c4d5e6f'
 
@@ -64,8 +65,8 @@ export async function updateSettings(patch: Partial<Settings>) {
 }
 
 // ---------- 單字庫 ----------
-export const DECK_COLORS = ['#f472b6', '#a78bfa', '#60a5fa', '#34d399', '#fbbf24', '#fb923c', '#f87171', '#2dd4bf']
-export const DECK_ICONS = ['🌸', '📘', '📝', '🎌', '🍡', '🗻', '⛩️', '🍵', '🐱', '⭐', '🎯', '📚']
+export const DECK_COLORS = TAPE_COLORS
+export const DECK_ICONS = DECK_GLYPHS
 
 export async function createDeck(input: Partial<Deck> & { name: string }): Promise<Deck> {
   const count = await db.decks.count()

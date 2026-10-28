@@ -9,6 +9,7 @@ import { computeStreak, dailyCounts } from '../lib/stats'
 import { dateKey } from '../lib/dates'
 import { displaySurface, primaryReading } from '../lib/distractors'
 import { audioSupported, playWord } from '../lib/browser'
+import { deckGlyph, tapeColor } from '../lib/deckStyle'
 import type { Deck, Word } from '../types'
 
 export function countdownText(days: number | null) {
@@ -18,17 +19,8 @@ export function countdownText(days: number | null) {
   return `距離考試 ${days} 天`
 }
 
-/** 紙膠帶的顏色與角度，依單字庫順序輪流 */
-const TAPE_COLORS = ['#E8A48A', '#9DB8C9', '#A9C2A0', '#E6C67E']
+/** 紙膠帶的角度，依單字庫順序輪流 */
 const TAPE_ANGLES = [-3, 2, -1, 3]
-
-/** 單字庫的漢字方塊：依名稱挑一個字 */
-export function deckGlyph(name: string): string {
-  if (/文法/.test(name)) return '文'
-  if (/課文|句/.test(name)) return '課'
-  if (/單字|単語|単字|單語|詞/.test(name)) return '単'
-  return name.match(/[一-鿿]/)?.[0] ?? '語'
-}
 
 /** 今日の一語：每天從單字庫固定挑一個（同一天同一個字） */
 export function wordOfTheDay(words: Word[], day = dateKey()): Word | null {
@@ -238,12 +230,12 @@ function DeckCard({ deck: d, stats: s, index, onPractice, onEditExam }: { deck: 
     <article className="relative flex flex-col rounded-2xl border-[1.5px] border-ink bg-surface p-5 pt-6 shadow-[4px_4px_0_var(--line-soft)]" data-testid="deck-card" data-deck-name={d.name}>
       <span
         className="washi-tape absolute -top-[11px] left-1/2 h-[22px] w-[86px]"
-        style={{ ['--tape' as string]: TAPE_COLORS[index % TAPE_COLORS.length], transform: `translateX(-50%) rotate(${TAPE_ANGLES[index % TAPE_ANGLES.length]}deg)` }}
+        style={{ ['--tape' as string]: tapeColor(d), transform: `translateX(-50%) rotate(${TAPE_ANGLES[index % TAPE_ANGLES.length]}deg)` }}
         aria-hidden
       />
       <Link to={`/deck/${d.id}`} className="group flex items-start gap-3">
         <span className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-xl border-[1.5px] border-ink bg-washi font-mincho text-[28px] font-extrabold" aria-hidden>
-          {deckGlyph(d.name)}
+          {deckGlyph(d)}
         </span>
         <div className="min-w-0 flex-1 pt-0.5">
           <h3 className="font-display leading-snug font-bold break-words group-hover:underline">{d.name}</h3>
@@ -266,7 +258,7 @@ function DeckCard({ deck: d, stats: s, index, onPractice, onEditExam }: { deck: 
           </div>
           <div className="flex h-2 overflow-hidden rounded-full bg-line-soft" role="img" aria-label={`已熟練 ${s.mastery.mastered}、學習中 ${s.mastery.learning}、未學 ${s.mastery.new}`}>
             <div className="bg-ink" style={{ width: `${(s.mastery.mastered / total) * 100}%` }} />
-            <div className="bg-dash" style={{ width: `${(s.mastery.learning / total) * 100}%` }} />
+            <div className="bg-muted" style={{ width: `${(s.mastery.learning / total) * 100}%` }} />
           </div>
         </div>
       </div>

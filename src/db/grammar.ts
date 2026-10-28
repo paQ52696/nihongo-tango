@@ -15,7 +15,7 @@ export async function addGrammarSet(setId: string): Promise<ImportResult & { dec
   if (!set) throw new Error('找不到這個文法題庫')
   const deckId = grammarDeckId(setId)
   const deck = await db.decks.get(deckId)
-  if (!deck || deck.deleted) await createDeck({ id: deckId, name: set.name, icon: '📘', color: '#818cf8' })
+  if (!deck || deck.deleted) await createDeck({ id: deckId, name: set.name, icon: '文', color: '#9DB8C9' })
   const drafts: WordDraft[] = set.points.map((p, i) => ({
     row: i + 1,
     kanji: p.pattern,

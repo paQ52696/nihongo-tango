@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Download, FileDown, List, Pencil, Trash2 } from 'lucide-react'
+import { deckGlyph, tapeColor } from '../lib/deckStyle'
 import { useAppData } from '../hooks/useData'
 import { deleteDeck, updateDeck } from '../db/repo'
 import { DeckForm } from '../components/DeckForm'
@@ -27,17 +29,17 @@ export function DeckPage() {
 
   return (
     <div className="space-y-5">
-      <section className="card overflow-hidden">
-        <div className="h-2" style={{ background: deck.color }} />
-        <div className="flex flex-wrap items-center gap-4 p-5">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl text-3xl" style={{ background: deck.color + '22' }} aria-hidden>
-            {deck.icon}
+      <section className="card relative mt-3">
+        <span className="washi-tape absolute -top-[11px] left-10 h-[22px] w-[86px] -rotate-2" style={{ ['--tape' as string]: tapeColor(deck) }} aria-hidden />
+        <div className="flex flex-wrap items-center gap-4 p-5 pt-6">
+          <span className="grid h-14 w-14 place-items-center rounded-xl border-[1.5px] border-ink bg-washi font-mincho text-3xl font-extrabold" aria-hidden>
+            {deckGlyph(deck)}
           </span>
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold" data-testid="deck-title">
               {deck.name}
             </h1>
-            <p className="text-sm text-ink-600 dark:text-lav-300">
+            <p className="text-sm text-muted">
               {countdownText(s.daysLeft) ?? '未設定考試日期'}・每日新卡上限 {s.newLimit}
               {s.newLimit !== deck.dailyNewLimit && `（依考試日期自動提高，原設定 ${deck.dailyNewLimit}）`}
             </p>
@@ -50,7 +52,8 @@ export function DeckPage() {
               模擬考
             </button>
             <button className="btn-ghost" onClick={() => setEditing(true)}>
-              ✎ 編輯
+              <Pencil size={16} aria-hidden />
+              編輯
             </button>
           </div>
         </div>
@@ -72,7 +75,7 @@ export function DeckPage() {
             { value: s.mastery.new, color: MASTERY_COLORS.new, label: '未學' },
           ]}
         />
-        <p className="mt-2 text-xs text-ink-600 dark:text-lav-300">
+        <p className="mt-2 text-xs text-muted">
           未學 {s.mastery.new}・學習中 {s.mastery.learning}・已熟練 {s.mastery.mastered}
         </p>
       </section>
@@ -85,16 +88,20 @@ export function DeckPage() {
       <section className="card flex flex-wrap items-center gap-2 p-5">
         <h2 className="mr-auto font-bold">管理</h2>
         <Link className="btn-ghost" to={`/words?deck=${deck.id}`}>
-          📚 單字列表
+          <List size={16} aria-hidden />
+          單字列表
         </Link>
         <Link className="btn-ghost" to={`/import?deck=${deck.id}`}>
-          📥 匯入單字
+          <Download size={16} aria-hidden />
+          匯入單字
         </Link>
         <button className="btn-ghost" onClick={() => downloadText(safeFilename(deck.name) + '.csv', deckToCsv(deck.id, data.words, data.entries), 'text/csv')}>
-          ⬇ 匯出 CSV
+          <FileDown size={16} aria-hidden />
+          匯出 CSV
         </button>
         <button className="btn-ghost" onClick={() => downloadText(safeFilename(deck.name) + '.json', deckToJson(deck, data.words, data.entries), 'application/json')}>
-          ⬇ 匯出 JSON
+          <FileDown size={16} aria-hidden />
+          匯出 JSON
         </button>
         <ConfirmButton
           confirmText={`刪除「${deck.name}」？單字庫和它的進度會被刪除（作答紀錄保留）。`}
@@ -103,7 +110,8 @@ export function DeckPage() {
             nav('/')
           }}
         >
-          🗑 刪除單字庫
+          <Trash2 size={16} aria-hidden />
+          刪除單字庫
         </ConfirmButton>
       </section>
 

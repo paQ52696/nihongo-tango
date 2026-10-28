@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { PencilLine, Volume2 } from 'lucide-react'
 import { useAppData } from '../hooks/useData'
 import { DeckTag, Empty, PageTitle, Segmented } from '../components/ui'
 import { BarList } from '../components/charts'
@@ -34,7 +35,8 @@ export function MistakesPage() {
       <PageTitle
         actions={
           <button className="btn-primary" disabled={!items.length} onClick={practice} data-testid="practice-mistakes">
-            ✏️ 針對錯題練習
+            <PencilLine size={18} aria-hidden />
+            針對錯題練習
           </button>
         }
       >
@@ -58,7 +60,7 @@ export function MistakesPage() {
             { value: 'recent', label: '依最近答錯' },
           ]}
         />
-        <span className="text-sm text-ink-600 dark:text-lav-300" data-testid="mistake-count">
+        <span className="text-sm text-muted" data-testid="mistake-count">
           共 {items.length} 題
         </span>
       </div>
@@ -76,11 +78,11 @@ export function MistakesPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-3">
                       <span className="jp text-2xl font-bold">{w.kanji || w.reading}</span>
-                      <span className="jp text-lg text-emerald-700 dark:text-emerald-300">{w.reading}</span>
+                      <span className="jp text-lg text-ok">{w.reading}</span>
                       <span className="text-sm">{w.meaning}</span>
                       {audioSupported() && (
-                        <button className="btn-ghost px-1.5 py-0" aria-label="發音" onClick={() => playWord(w)}>
-                          🔊
+                        <button className="btn-ghost w-11 px-0" aria-label="發音" onClick={() => playWord(w)}>
+                          <Volume2 size={18} aria-hidden />
                         </button>
                       )}
                     </div>
@@ -90,22 +92,22 @@ export function MistakesPage() {
                         <span>
                           我選過：
                           {m.wrongChoices.map((c) => (
-                            <span key={c} className="jp mr-1 rounded bg-red-50 px-1.5 text-red-700 line-through dark:bg-red-950 dark:text-red-300">
+                            <span key={c} className="jp mr-1 rounded bg-accent-soft px-1.5 text-accent line-through">
                               {c}
                             </span>
                           ))}
                         </span>
                       )}
                       {Object.entries(m.errorTypes).map(([k, v]) => (
-                        <span key={k} className="rounded-full bg-lav-100 px-2 text-xs dark:bg-ink-600">
+                        <span key={k} className="rounded-full border border-line-soft px-2 text-xs text-ink-2">
                           {ERROR_LABELS[k as ErrorType]} ×{v}
                         </span>
                       ))}
                     </div>
                   </div>
                   <div className="text-right text-sm">
-                    <div className="font-bold text-red-600 dark:text-red-300">錯 {m.wrongCount} 次</div>
-                    <div className="text-xs text-ink-600 dark:text-lav-300" aria-label={`連續答對 ${m.streak} 次`}>
+                    <div className="font-bold text-accent">錯 {m.wrongCount} 次</div>
+                    <div className="text-xs text-muted" aria-label={`連續答對 ${m.streak} 次`}>
                       連續答對 {'●'.repeat(m.streak)}
                       {'○'.repeat(MISTAKE_CLEAR_STREAK - m.streak)}
                     </div>
@@ -117,7 +119,7 @@ export function MistakesPage() {
           <aside className="card h-fit space-y-3 p-5">
             <h2 className="font-bold">我最常犯的錯</h2>
             {top && (
-              <p className="rounded-xl bg-sakura-100 p-3 text-sm dark:bg-ink-700">
+              <p className="rounded-xl border border-dashed border-dash bg-washi p-3 text-sm">
                 最常見：<strong>{ERROR_LABELS[top[0] as ErrorType]}</strong>（{top[1]} 次）
               </p>
             )}

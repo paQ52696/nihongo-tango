@@ -1,6 +1,7 @@
 // 講解：動詞分組、て形變化與用法、第 13–16 課文法、我的動詞表（說明都是自行撰寫）
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ArrowRight, Lightbulb } from 'lucide-react'
 import { bind, unbind } from 'wanakana'
 import { useAppData } from '../hooks/useData'
 import { PageTitle, Segmented, Toggle } from '../components/ui'
@@ -58,7 +59,7 @@ function Converter() {
   const v = convertVerb(text, group === 'auto' ? undefined : group)
   return (
     <div className="space-y-3">
-      <p className="text-sm text-ink-600 dark:text-lav-300">輸入ます形或辭書形（可以打羅馬拼音，例如 kakimasu），看它屬於哪一類、用哪條規則變成て形。</p>
+      <p className="text-sm text-muted">輸入ます形或辭書形（可以打羅馬拼音，例如 kakimasu），看它屬於哪一類、用哪條規則變成て形。</p>
       <div className="flex flex-wrap items-end gap-3">
         <input
           ref={ref}
@@ -83,17 +84,17 @@ function Converter() {
           ]}
         />
       </div>
-      {text && !v && <p className="text-sm text-amber-700 dark:text-amber-300">看起來不是動詞。請輸入「〜ます」或辭書形（〜う段結尾）。</p>}
+      {text && !v && <p className="text-sm text-accent">看起來不是動詞。請輸入「〜ます」或辭書形（〜う段結尾）。</p>}
       {v && (
-        <div className="rounded-xl bg-lav-50 p-4 dark:bg-ink-700" data-testid="te-result">
+        <div className="rounded-xl border-[1.5px] border-dashed border-dash bg-washi p-4" data-testid="te-result">
           <p className="jp text-2xl">
-            {v.masu?.surface ?? v.dict} → <strong className="text-sakura-600 dark:text-sakura-300">{teForm(v)}</strong>
+            {v.masu?.surface ?? v.dict} → <strong className="text-accent">{teForm(v)}</strong>
           </p>
           <p className="mt-1 text-sm">
             {GROUP_LABELS[v.group]}・{teRule(v)}
-            {!v.masu && <span className="jp ml-2 text-ink-600 dark:text-lav-300">（ます形：{masuForm(v)}）</span>}
+            {!v.masu && <span className="jp ml-2 text-muted">（ます形：{masuForm(v)}）</span>}
           </p>
-          {v.guessed && <p className="mt-1 text-xs text-ink-600 dark:text-lav-300">分組是自動判斷的；像「話します」（I 類）、「見ます」（II 類）這種看外表判斷不出來，不對的話請手動選分組。</p>}
+          {v.guessed && <p className="mt-1 text-xs text-muted">分組是自動判斷的；像「話します」（I 類）、「見ます」（II 類）這種看外表判斷不出來，不對的話請手動選分組。</p>}
         </div>
       )}
     </div>
@@ -127,7 +128,7 @@ export function LearnPage() {
       <PageTitle>講解</PageTitle>
       <nav className="flex flex-wrap gap-2" aria-label="講解目錄">
         {SECTIONS.map((s) => (
-          <a key={s.id} href={'#/learn'} onClick={(e) => (e.preventDefault(), document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth' }))} className="rounded-full bg-lav-100 px-3 py-1 text-sm hover:bg-lav-200 dark:bg-ink-700">
+          <a key={s.id} href={'#/learn'} onClick={(e) => (e.preventDefault(), document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth' }))} className="inline-flex min-h-11 items-center rounded-full border-[1.5px] border-ink bg-surface px-3.5 text-sm transition-colors hover:bg-ink hover:text-surface">
             {s.label}
           </a>
         ))}
@@ -145,13 +146,16 @@ export function LearnPage() {
           <li>
             <strong>い段＋ます → 大多是第 I 類</strong>：<span className="jp">書きます、飲みます、遊びます、帰ります、待ちます</span>
             <br />
-            <span className="text-sm text-ink-600 dark:text-lav-300">
+            <span className="text-sm text-muted">
               但有一些是第 II 類，要直接背：<span className="jp">見ます、います、起きます、借ります、浴びます、降ります（おります）、できます、着ます</span>
             </span>
           </li>
         </ol>
-        <p className="rounded-xl bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
-          💡 課本單字表的「I／II／III」就是分組，背單字時順便記。容易弄錯的：<span className="jp">帰ります、入ります、知ります、走ります</span> 都是<strong>第 I 類</strong>（て形是 帰って、入って），不要因為「〜ります」就以為是 II 類。
+        <p className="flex gap-2 rounded-xl border-[1.5px] border-dashed border-accent bg-accent-soft p-3 text-sm">
+          <Lightbulb size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden />
+          <span>
+          課本單字表的「I／II／III」就是分組，背單字時順便記。容易弄錯的：<span className="jp">帰ります、入ります、知ります、走ります</span> 都是<strong>第 I 類</strong>（て形是 帰って、入って），不要因為「〜ります」就以為是 II 類。
+          </span>
         </p>
       </Section>
 
@@ -161,7 +165,7 @@ export function LearnPage() {
         </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[30rem] text-left text-sm">
-            <thead className="text-xs text-ink-600 dark:text-lav-300">
+            <thead className="text-xs text-muted">
               <tr>
                 <th className="p-2">ます前面</th>
                 <th className="p-2">變成</th>
@@ -170,21 +174,22 @@ export function LearnPage() {
             </thead>
             <tbody>
               {TE_RULES.map((r) => (
-                <tr key={r.from} className="border-t border-sakura-100 dark:border-ink-700">
+                <tr key={r.from} className="border-t border-line-soft">
                   <td className="jp p-2 text-lg font-bold">{r.from}</td>
-                  <td className="jp p-2 text-lg font-bold text-sakura-600 dark:text-sakura-300">{r.to}</td>
+                  <td className="jp p-2 text-lg font-bold text-accent">{r.to}</td>
                   <td className="jp p-2">
                     {r.examples.map(([a, b]) => `${a} → ${b}`).join('、')}
-                    {r.note && <span className="block text-xs text-red-600 dark:text-red-300">{r.note}</span>}
+                    {r.note && <span className="block text-xs text-accent">{r.note}</span>}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="rounded-xl bg-sakura-50 p-3 dark:bg-ink-700">
-          🎵 口訣（照順序唸幾遍）：<strong className="jp text-lg">いちり って、みびに んで、き いて、ぎ いで、し して</strong>
-          <span className="block text-sm text-ink-600 dark:text-lav-300">再加一句「行きます是例外：行って」。</span>
+        <p className="rounded-xl border-[1.5px] border-accent bg-surface p-3">
+          <span className="jp mr-2 inline-block -rotate-3 rounded-md border-[1.5px] border-accent px-1.5 font-mincho text-sm font-extrabold text-accent">口訣</span>
+          照順序唸幾遍：<strong className="jp text-lg">いちり って、みびに んで、き いて、ぎ いで、し して</strong>
+          <span className="block text-sm text-muted">再加一句「行きます是例外：行って」。</span>
         </p>
         <p>
           <strong>第 II 類</strong>：去掉「ます」直接加「て」→ <span className="jp">食べます → 食べて、見ます → 見て、起きます → 起きて</span>
@@ -192,7 +197,7 @@ export function LearnPage() {
         <p>
           <strong>第 III 類</strong>：<span className="jp">します → して、来ます → 来て（きて）、勉強します → 勉強して</span>
         </p>
-        <details className="rounded-xl bg-lav-50 p-3 text-sm dark:bg-ink-700">
+        <details className="rounded-xl border-[1.5px] border-dashed border-dash bg-washi p-3 text-sm">
           <summary className="cursor-pointer font-medium">常見錯誤（動詞變化題的錯誤選項就是這些）</summary>
           <ul className="jp mt-2 list-disc space-y-1 pl-5">
             <li>書きます → ✕ 書きて ✕ 書って → ○ 書いて（I 類不能直接去ます加て）</li>
@@ -204,7 +209,8 @@ export function LearnPage() {
           </ul>
         </details>
         <Link className="btn-primary w-fit" to="/practice?mode=conjugate">
-          去練動詞變化 →
+          去練動詞變化
+          <ArrowRight size={18} aria-hidden />
         </Link>
       </Section>
 
@@ -213,15 +219,15 @@ export function LearnPage() {
       </Section>
 
       <Section id="te-uses" title="④ て形的用法（第 14–16 課）">
-        <ul className="divide-y divide-sakura-100 dark:divide-ink-700">
+        <ul className="divide-y divide-line-soft">
           {TE_USES.map((u) => (
             <li key={u.pattern + u.meaning} className="py-2">
               <p>
-                <span className="mr-2 rounded bg-lav-100 px-1.5 text-xs dark:bg-ink-600">{u.lesson}</span>
+                <span className="mr-2 rounded border border-line-soft px-1.5 text-xs text-muted">{u.lesson}</span>
                 <strong className="jp">{u.pattern}</strong>　{u.meaning}
               </p>
               <p className="jp mt-1">{u.ja}</p>
-              <p className="text-sm text-ink-600 dark:text-lav-300">{u.zh}</p>
+              <p className="text-sm text-muted">{u.zh}</p>
             </li>
           ))}
         </ul>
@@ -232,21 +238,21 @@ export function LearnPage() {
           const lessons = [...new Set(set.points.map((p) => p.lesson))]
           return lessons.map((lesson) => (
             <div key={set.id + lesson} className="space-y-2">
-              <h3 className="font-bold text-sakura-600 dark:text-sakura-300">{lesson}</h3>
+              <h3 className="font-bold text-accent">{lesson}</h3>
               {set.points
                 .filter((p) => p.lesson === lesson)
                 .map((p) => (
-                  <details key={p.id} className="rounded-xl border border-sakura-100 p-3 dark:border-ink-600">
+                  <details key={p.id} className="rounded-xl border-[1.5px] border-line-soft bg-surface p-3">
                     <summary className="cursor-pointer">
                       <strong className="jp">{p.pattern}</strong>
-                      <span className="ml-2 text-sm text-ink-600 dark:text-lav-300">{p.meaning}</span>
+                      <span className="ml-2 text-sm text-muted">{p.meaning}</span>
                     </summary>
                     <p className="mt-2 text-sm">{p.explanation}</p>
                     <ul className="mt-2 space-y-1">
                       {p.examples.map((ex) => (
                         <li key={ex.ja}>
                           <span className="jp">{ex.ja}</span>
-                          <span className="block text-sm text-ink-600 dark:text-lav-300">{ex.zh}</span>
+                          <span className="block text-sm text-muted">{ex.zh}</span>
                         </li>
                       ))}
                     </ul>
@@ -255,7 +261,7 @@ export function LearnPage() {
             </div>
           ))
         })}
-        <p className="text-sm text-ink-600 dark:text-lav-300">
+        <p className="text-sm text-muted">
           文法題要先到「匯入」頁最下方加入內建文法題庫，才能在
           <Link className="mx-1 underline" to="/practice?mode=grammar">
             練習 → 文法題
@@ -266,11 +272,11 @@ export function LearnPage() {
 
       <Section id="my-verbs" title="⑥ 我的動詞表">
         {!data ? null : verbs.length === 0 ? (
-          <p className="text-sm text-ink-600 dark:text-lav-300">單字庫裡還沒有動詞（詞性要寫「動詞」，ます形要加分組，例如「動詞I」）。</p>
+          <p className="text-sm text-muted">單字庫裡還沒有動詞（詞性要寫「動詞」，ます形要加分組，例如「動詞I」）。</p>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-ink-600 dark:text-lav-300">單字庫裡的 {verbs.length} 個動詞。遮住て形自己唸，點一下看答案。</p>
+              <p className="text-sm text-muted">單字庫裡的 {verbs.length} 個動詞。遮住て形自己唸，點一下看答案。</p>
               <div className="min-w-40">
                 <Toggle
                   checked={hideTe}
@@ -297,15 +303,15 @@ export function LearnPage() {
                       return (
                         <button
                           key={key}
-                          className="jp flex items-baseline justify-between gap-2 rounded-xl border border-sakura-100 px-3 py-2 text-left dark:border-ink-600"
+                          className="jp flex min-h-11 items-baseline justify-between gap-2 rounded-xl border-[1.5px] border-line-soft bg-surface px-3 py-2 text-left transition-colors hover:border-ink"
                           onClick={() => setShown(new Set(shown).add(key))}
                           data-testid="verb-row"
                         >
                           <span>
                             {v.masu?.surface ?? v.surface}
-                            <span className="ml-1 text-xs text-ink-600 dark:text-lav-300">{lesson}</span>
+                            <span className="ml-1 text-xs text-muted">{lesson}</span>
                           </span>
-                          <span className={open ? 'font-bold text-sakura-600 dark:text-sakura-300' : 'rounded bg-lav-100 px-2 text-transparent dark:bg-ink-600'}>{teForm(v)}</span>
+                          <span className={open ? 'font-bold text-accent ' : 'rounded bg-pattern-line px-2 text-transparent '}>{teForm(v)}</span>
                         </button>
                       )
                     })}

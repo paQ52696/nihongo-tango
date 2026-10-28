@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Flame } from 'lucide-react'
 import { useAppData, useSettings } from '../hooks/useData'
+import { deckGlyph, tapeColor } from '../lib/deckStyle'
 import { PageTitle, StatTile, pct } from '../components/ui'
 import { Heatmap, LineChart, BarList, SectionMasteryList } from '../components/charts'
 import { accuracy, accuracyTrend, computeStreak, dailyCounts, errorDistribution, goalRate, heatmap, longestStreak, masteryBySection } from '../lib/stats'
@@ -38,8 +40,8 @@ export function StatsPage() {
       </PageTitle>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatTile label="連續學習天數" value={<span data-testid="streak">🔥 {computeStreak(counts)}</span>} sub={`最長 ${longestStreak(counts)} 天`} />
-        <StatTile label="今日目標" value={<span data-testid="stats-today">{today} / {goal}</span>} sub={today >= goal ? '已達成 🎉' : `還差 ${goal - today} 題`} />
+        <StatTile label="連續學習天數" value={<span data-testid="streak" className="inline-flex items-center gap-1"><Flame size={22} className="text-accent" aria-hidden />{computeStreak(counts)}</span>} sub={`最長 ${longestStreak(counts)} 天`} />
+        <StatTile label="今日目標" value={<span data-testid="stats-today">{today} / {goal}</span>} sub={today >= goal ? '已達成' : `還差 ${goal - today} 題`} />
         <StatTile label="近 30 天達成率" value={pct(goalRate(counts, goal, 30))} sub="每日目標達成的天數比例" />
         <StatTile label="總作答 / 正確率" value={<span data-testid="stats-total">{logs.length}</span>} sub={`正確率 ${pct(accuracy(logs))}`} />
       </div>
@@ -57,7 +59,7 @@ export function StatsPage() {
         <section className="card p-5">
           <h2 className="mb-3 font-bold">錯誤類型分布</h2>
           <div data-testid="error-dist">
-            <BarList items={Object.entries(dist).map(([k, v]) => ({ label: ERROR_LABELS[k as ErrorType], value: v! })).sort((a, b) => b.value - a.value)} color="#a688f8" />
+            <BarList items={Object.entries(dist).map(([k, v]) => ({ label: ERROR_LABELS[k as ErrorType], value: v! })).sort((a, b) => b.value - a.value)} />
           </div>
         </section>
       </div>
@@ -65,8 +67,10 @@ export function StatsPage() {
       {decks.map((d) => (
         <section key={d.id} className="card p-5">
           <h2 className="mb-3 flex items-center gap-2 font-bold">
-            <span className="h-3 w-3 rounded-full" style={{ background: d.color }} />
-            {d.icon} {d.name}：各段熟練度
+            <span className="grid h-7 w-7 place-items-center rounded-lg border-[1.5px] border-ink font-mincho text-sm font-extrabold" style={{ background: tapeColor(d) }} aria-hidden>
+              {deckGlyph(d)}
+            </span>
+            {d.name}：各段熟練度
           </h2>
           <SectionMasteryList
             deckId={d.id}

@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom'
 import type { HeatCell, SectionMastery } from '../lib/stats'
 import { MASTERY_COLORS, MASTERY_LABELS } from './ui'
 
-const HEAT = ['var(--heat-0)', '#fbcfe1', '#f7a1c4', '#ec6fa3', '#d0336f']
+// 朱色深淺：沒學 → 達成每日目標
+const HEAT = ['var(--line-soft)', ...[28, 50, 75, 100].map((p) => `color-mix(in srgb, var(--accent) ${p}%, var(--surface))`)]
 
 export function Heatmap({ cols }: { cols: HeatCell[][] }) {
   const size = 12
@@ -22,10 +23,10 @@ export function Heatmap({ cols }: { cols: HeatCell[][] }) {
     if (box.current) box.current.scrollLeft = box.current.scrollWidth
   }, [cols.length])
   return (
-    <div ref={box} className="overflow-x-auto [--heat-0:#f3e8ef] dark:[--heat-0:#3a2f57]">
+    <div ref={box} className="overflow-x-auto">
       <svg width={w} height={h} role="img" aria-label="學習熱力圖" className="block">
         {months.map((m) => (
-          <text key={m.x} x={m.x} y={10} fontSize={10} className="fill-ink-600 dark:fill-lav-300">
+          <text key={m.x} x={m.x} y={10} fontSize={10} className="fill-muted">
             {m.label}
           </text>
         ))}
@@ -37,7 +38,7 @@ export function Heatmap({ cols }: { cols: HeatCell[][] }) {
           )),
         )}
       </svg>
-      <div className="mt-2 flex items-center gap-1 text-[11px] text-ink-600 dark:text-lav-300">
+      <div className="mt-2 flex items-center gap-1 text-[11px] text-muted">
         少
         {HEAT.map((c, i) => (
           <span key={i} className="inline-block h-3 w-3 rounded-sm" style={{ background: c }} />
@@ -70,25 +71,25 @@ export function LineChart({ points, height = 160 }: { points: { label: string; v
     <svg viewBox={`0 0 ${w} ${height}`} className="w-full" role="img" aria-label="正確率趨勢">
       {[0, 0.5, 1].map((g) => (
         <g key={g}>
-          <line x1={pad.l} x2={w - pad.r} y1={y(g)} y2={y(g)} className="stroke-sakura-100 dark:stroke-ink-700" />
-          <text x={pad.l - 6} y={y(g) + 4} fontSize={11} textAnchor="end" className="fill-ink-600 dark:fill-lav-300">
+          <line x1={pad.l} x2={w - pad.r} y1={y(g)} y2={y(g)} className="stroke-line-soft" />
+          <text x={pad.l - 6} y={y(g) + 4} fontSize={11} textAnchor="end" className="fill-muted">
             {g * 100}%
           </text>
         </g>
       ))}
       {segs.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="#a688f8" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        <path key={i} d={d} fill="none" stroke="var(--ink)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
       ))}
       {points.map((p, i) =>
         p.value === null ? null : (
-          <circle key={i} cx={x(i)} cy={y(p.value)} r={3.5} fill="#ec4f8c">
+          <circle key={i} cx={x(i)} cy={y(p.value)} r={3.5} fill="var(--accent)">
             <title>{`${p.label}：${Math.round(p.value * 100)}%`}</title>
           </circle>
         ),
       )}
       {points.map((p, i) =>
         i % Math.ceil(points.length / 6) === 0 || i === points.length - 1 ? (
-          <text key={'l' + i} x={x(i)} y={height - 6} fontSize={11} textAnchor={i === points.length - 1 ? 'end' : i === 0 ? 'start' : 'middle'} className="fill-ink-600 dark:fill-lav-300">
+          <text key={'l' + i} x={x(i)} y={height - 6} fontSize={11} textAnchor={i === points.length - 1 ? 'end' : i === 0 ? 'start' : 'middle'} className="fill-muted">
             {p.label}
           </text>
         ) : null,
@@ -97,15 +98,15 @@ export function LineChart({ points, height = 160 }: { points: { label: string; v
   )
 }
 
-export function BarList({ items, color = '#ec4f8c' }: { items: { label: string; value: number }[]; color?: string }) {
+export function BarList({ items, color = 'var(--ink)' }: { items: { label: string; value: number }[]; color?: string }) {
   const max = Math.max(1, ...items.map((i) => i.value))
-  if (!items.length) return <p className="text-sm text-ink-600 dark:text-lav-300">還沒有錯誤紀錄 🎉</p>
+  if (!items.length) return <p className="text-sm text-muted">還沒有錯誤紀錄</p>
   return (
     <ul className="space-y-2">
       {items.map((i) => (
         <li key={i.label} className="grid grid-cols-[7.5rem_1fr_2.5rem] items-center gap-2 text-sm">
           <span className="truncate">{i.label}</span>
-          <span className="h-3 overflow-hidden rounded-full bg-sakura-100 dark:bg-ink-700">
+          <span className="h-2 overflow-hidden rounded-full bg-line-soft">
             <span className="block h-full rounded-full" style={{ width: `${(i.value / max) * 100}%`, background: color }} />
           </span>
           <span className="text-right tabular-nums">{i.value}</span>
@@ -116,7 +117,7 @@ export function BarList({ items, color = '#ec4f8c' }: { items: { label: string; 
 }
 
 export function SectionMasteryList({ sections, deckId }: { sections: SectionMastery[]; deckId?: string }) {
-  if (!sections.length) return <p className="text-sm text-ink-600 dark:text-lav-300">這個單字庫沒有頁碼或課次資訊。</p>
+  if (!sections.length) return <p className="text-sm text-muted">這個單字庫沒有頁碼或課次資訊。</p>
   return (
     <div>
       <div className="mb-2 flex flex-wrap gap-3 text-xs">
@@ -135,12 +136,12 @@ export function SectionMasteryList({ sections, deckId }: { sections: SectionMast
           const body = (
             <>
               <span className="w-16 shrink-0 truncate text-sm font-medium">{s.label}</span>
-              <span className="flex h-3 flex-1 overflow-hidden rounded-full bg-sakura-100 dark:bg-ink-700">
+              <span className="flex h-2 flex-1 overflow-hidden rounded-full bg-line-soft">
                 {(['mastered', 'learning', 'new'] as const).map((k) => (
                   <span key={k} style={{ width: `${(s.counts[k] / total) * 100}%`, background: MASTERY_COLORS[k] }} />
                 ))}
               </span>
-              <span className="w-16 shrink-0 text-right text-xs tabular-nums text-ink-600 dark:text-lav-300">
+              <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted">
                 {s.counts.mastered}/{total}
               </span>
             </>
@@ -148,7 +149,7 @@ export function SectionMasteryList({ sections, deckId }: { sections: SectionMast
           return (
             <li key={s.key}>
               {link ? (
-                <Link to={link} className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-sakura-50 dark:hover:bg-ink-700" title={`練習 ${s.label}`}>
+                <Link to={link} className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1 hover:bg-pattern-line" title={`練習 ${s.label}`}>
                   {body}
                 </Link>
               ) : (

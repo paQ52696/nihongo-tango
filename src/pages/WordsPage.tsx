@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Pencil, Star, Tag, Volume2 } from 'lucide-react'
 import { useAppData } from '../hooks/useData'
 import { batchTags, copyWordsToDeck, removeFromDeck, toggleFavorite, updateWord, addWordToDeck, notifyChange } from '../db/repo'
 import { ConfirmButton, DeckTag, Empty, Modal, PageTitle } from '../components/ui'
@@ -67,10 +68,11 @@ export function WordsPage() {
             </option>
           ))}
         </select>
-        <button className={`chip ${favOnly ? 'border-amber-400 bg-amber-50 dark:bg-ink-700' : 'border-sakura-200 dark:border-ink-600'}`} aria-pressed={favOnly} onClick={() => setFavOnly(!favOnly)}>
-          ⭐ 只看收藏
+        <button className={`chip ${favOnly ? 'border-ink bg-ink font-bold text-surface' : 'border-line-soft bg-surface hover:border-ink'}`} aria-pressed={favOnly} onClick={() => setFavOnly(!favOnly)}>
+          <Star size={16} aria-hidden />
+          只看收藏
         </button>
-        <span className="ml-auto text-sm text-ink-600 dark:text-lav-300" data-testid="word-count">
+        <span className="ml-auto text-sm text-muted" data-testid="word-count">
           {list.length} 個單字
         </span>
       </div>
@@ -79,7 +81,8 @@ export function WordsPage() {
         <div className="card anim-in sticky top-16 z-20 flex flex-wrap items-center gap-2 p-3" data-testid="bulk-bar">
           <span className="text-sm font-medium">已選 {selected.size} 個</span>
           <button className="btn-secondary" onClick={() => setBulk('tag')}>
-            🏷 標籤
+            <Tag size={16} aria-hidden />
+            標籤
           </button>
           <button className="btn-secondary" onClick={() => setBulk('copy')}>
             複製到…
@@ -111,7 +114,7 @@ export function WordsPage() {
         <Empty>沒有符合條件的單字。</Empty>
       ) : (
         <div className="card overflow-hidden">
-          <div className="flex items-center gap-3 border-b border-sakura-100 px-4 py-2 text-xs text-ink-600 dark:border-ink-700 dark:text-lav-300">
+          <div className="flex items-center gap-3 border-b border-line-soft px-4 py-2 text-xs text-muted">
             <input
               type="checkbox"
               aria-label="全選"
@@ -120,7 +123,7 @@ export function WordsPage() {
             />
             全選
           </div>
-          <ul className="divide-y divide-sakura-100 dark:divide-ink-700">
+          <ul className="divide-y divide-line-soft">
             {list.slice(0, limit).map((w) => {
               const card = cardOf(w.id)
               const lvl = card ? masteryLevel(card) : 'new'
@@ -131,35 +134,35 @@ export function WordsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2">
                       <span className="jp text-lg font-bold">{w.kanji || w.reading}</span>
-                      {w.kanji && <span className="jp text-lav-700 dark:text-lav-200">{w.reading}</span>}
-                      {w.pos && <span className="rounded bg-lav-100 px-1.5 text-xs dark:bg-ink-600">{w.pos}</span>}
+                      {w.kanji && <span className="jp text-ink-2">{w.reading}</span>}
+                      {w.pos && <span className="rounded border border-line-soft px-1.5 text-xs text-muted">{w.pos}</span>}
                       <span className="text-sm">{w.meaning}</span>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       {decksOf(w.id).map(({ deck: d, entry }) => (
                         <span key={entry.id} className="inline-flex items-center gap-1 whitespace-nowrap">
                           <DeckTag deck={d!} small />
-                          {entry.page != null && <span className="text-xs text-ink-600 dark:text-lav-300">p.{entry.page}</span>}
-                          {entry.lesson && <span className="text-xs text-ink-600 dark:text-lav-300">{entry.lesson}</span>}
+                          {entry.page != null && <span className="text-xs text-muted">p.{entry.page}</span>}
+                          {entry.lesson && <span className="text-xs text-muted">{entry.lesson}</span>}
                         </span>
                       ))}
                       {w.tags.map((t) => (
-                        <span key={t} className="rounded-full bg-sakura-100 px-2 text-xs text-sakura-700 dark:bg-ink-700 dark:text-sakura-200">
+                        <span key={t} className="rounded-full border border-line-soft px-2 text-xs text-ink-2">
                           #{t}
                         </span>
                       ))}
                     </div>
                   </div>
                   {audioSupported() && (
-                    <button className="btn-ghost hidden px-2 sm:inline-flex" onClick={() => playWord(w)} aria-label="發音">
-                      🔊
+                    <button className="btn-ghost hidden w-11 px-0 sm:inline-flex" onClick={() => playWord(w)} aria-label="發音">
+                      <Volume2 size={18} aria-hidden />
                     </button>
                   )}
-                  <button className="btn-ghost px-1.5 sm:px-2" onClick={() => toggleFavorite(w.id)} aria-label={w.favorite ? '取消收藏' : '收藏'} aria-pressed={w.favorite}>
-                    {w.favorite ? '⭐' : '☆'}
+                  <button className={`btn-ghost w-11 px-0 ${w.favorite ? 'text-accent' : 'text-muted'}`} onClick={() => toggleFavorite(w.id)} aria-label={w.favorite ? '取消收藏' : '收藏'} aria-pressed={w.favorite}>
+                    <Star size={18} fill={w.favorite ? 'currentColor' : 'none'} aria-hidden />
                   </button>
-                  <button className="btn-ghost px-1.5 sm:px-2" onClick={() => setEditing(w)} aria-label="編輯">
-                    ✎
+                  <button className="btn-ghost w-11 px-0" onClick={() => setEditing(w)} aria-label="編輯">
+                    <Pencil size={18} aria-hidden />
                   </button>
                 </li>
               )
@@ -182,7 +185,7 @@ export function WordsPage() {
         <BulkTags tags={data.tags} onApply={async (add, remove) => { await batchTags(sel, add, remove); setBulk(null) }} />
       </Modal>
       <Modal open={bulk === 'copy' || bulk === 'move'} onClose={() => setBulk(null)} title={bulk === 'move' ? '移動到其他單字庫' : '複製到其他單字庫'}>
-        <p className="mb-3 text-sm text-ink-600 dark:text-lav-300">{bulk === 'move' ? '移動後，原單字庫的進度會移除，新單字庫從頭開始。' : '複製後兩個單字庫的進度各自獨立。'}</p>
+        <p className="mb-3 text-sm text-muted">{bulk === 'move' ? '移動後，原單字庫的進度會移除，新單字庫從頭開始。' : '複製後兩個單字庫的進度各自獨立。'}</p>
         <div className="grid gap-2">
           {data.decks
             .filter((d) => d.id !== deck)
@@ -224,7 +227,7 @@ function BulkTags({ tags, onApply }: { tags: string[]; onApply: (add: string[], 
           <span className="label">移除標籤</span>
           <div className="flex flex-wrap gap-2">
             {tags.map((t) => (
-              <button key={t} className={`chip ${remove.includes(t) ? 'border-red-400 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-200' : 'border-sakura-200 dark:border-ink-600'}`} aria-pressed={remove.includes(t)} onClick={() => setRemove(remove.includes(t) ? remove.filter((x) => x !== t) : [...remove, t])}>
+              <button key={t} className={`chip ${remove.includes(t) ? 'border-accent bg-accent-soft text-accent line-through' : 'border-line-soft bg-surface hover:border-ink'}`} aria-pressed={remove.includes(t)} onClick={() => setRemove(remove.includes(t) ? remove.filter((x) => x !== t) : [...remove, t])}>
                 #{t}
               </button>
             ))}

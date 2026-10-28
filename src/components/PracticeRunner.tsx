@@ -1,6 +1,7 @@
 // 練習進行中：出題、作答、回饋動畫、自評、鍵盤操作
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { bind, unbind } from 'wanakana'
+import { CircleCheck, CircleX, Volume2, X } from 'lucide-react'
 import type { Question } from '../lib/questions'
 import { INTERACTION, MODE_HINTS, checkTyping } from '../lib/questions'
 import { checkSentence, diffSentence } from '../lib/sentences'
@@ -114,28 +115,36 @@ export function PracticeRunner({
     return () => clearInterval(t)
   }, [timed, answered, index, answer, kind])
 
+  // 自評存檔中（避免連按兩下把同一題評兩次、或把下一題的按鍵算到上一題）
+  const rating = useRef(false)
   const rate = useCallback(
     async (r: Rating) => {
-      if (!answered) return
+      if (!answered || rating.current) return
+      rating.current = true
       const ok = kind === 'reveal' ? r > 1 : correct
       const err = kind === 'reveal' ? (ok ? null : 'translation') : errorType
       const rec: AnswerRecord = { question: q, chosen: chosen ?? null, correct: ok, errorType: err, rating: r }
-      await recordAnswer({
-        cardId: q.cardId,
-        deckId: q.deckId,
-        wordId: q.wordId,
-        mode: q.mode,
-        prompt: q.prompt,
-        answer: q.answer,
-        chosen: chosen ?? null,
-        options: q.options.map((o) => o.text),
-        correct: ok,
-        errorType: err,
-        rating: r,
-        durationMs: Date.now() - started.current,
-        source: 'practice',
-        sessionId,
-      })
+      try {
+        await recordAnswer({
+          cardId: q.cardId,
+          deckId: q.deckId,
+          wordId: q.wordId,
+          mode: q.mode,
+          prompt: q.prompt,
+          answer: q.answer,
+          chosen: chosen ?? null,
+          options: q.options.map((o) => o.text),
+          correct: ok,
+          errorType: err,
+          rating: r,
+          durationMs: Date.now() - started.current,
+          source: 'practice',
+          sessionId,
+        })
+      } catch (e) {
+        rating.current = false
+        throw e
+      }
       const next = [...records, rec]
       setRecords(next)
       if (index + 1 >= questions.length) onFinish(next)
@@ -145,6 +154,7 @@ export function PracticeRunner({
         setOverride(false)
         setPicked([])
       }
+      rating.current = false
     },
     [answered, q, chosen, correct, errorType, kind, records, index, questions.length, onFinish, sessionId],
   )
@@ -164,7 +174,8 @@ export function PracticeRunner({
   )
 
   // 鍵盤：1–4 選答案（作答後是自評）、Enter 下一題、Space 重播發音
-  useEffect(() => {
+  // 用 useLayoutEffect：換題後畫面一出現就換成新題目的處理函式，不會有一瞬間還是上一題的
+  useLayoutEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const inInput = (e.target as HTMLElement)?.tagName === 'INPUT'
       if (e.key === ' ' && !inInput) {
@@ -214,40 +225,41 @@ export function PracticeRunner({
   return (
     <div className="mx-auto max-w-2xl space-y-4" data-testid="practice-runner">
       <div className="flex items-center gap-3 text-sm">
-        <button className="btn-ghost px-2" onClick={onQuit}>
-          ✕ 結束
+        <button className="btn-ghost -ml-2 px-2" onClick={onQuit}>
+          <X size={18} aria-hidden />
+          結束
         </button>
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-sakura-100 dark:bg-ink-700">
-          <div className="h-full rounded-full bg-sakura-400 transition-all" style={{ width: `${(index / questions.length) * 100}%` }} />
+        <div className="h-3 flex-1 overflow-hidden rounded-full border-[1.5px] border-ink bg-surface">
+          <div className="stripe-fill h-full transition-all" style={{ width: `${(index / questions.length) * 100}%` }} />
         </div>
-        <span className="tabular-nums" data-testid="progress">
+        <span className="font-medium tabular-nums" data-testid="progress">
           {index + 1} / {questions.length}
         </span>
       </div>
 
       <section className={`card p-6 text-center ${answered ? (correct ? 'anim-pop' : 'anim-shake') : ''}`} aria-live="polite">
-        <p className="mb-3 text-xs text-ink-600 dark:text-lav-300">{MODE_HINTS[q.mode]}</p>
+        <p className="mb-3 text-xs text-muted">{MODE_HINTS[q.mode]}</p>
         {timed && !answered && (
-          <div className="mx-auto mb-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-lav-100 dark:bg-ink-700" aria-label={`剩下 ${left} 秒`}>
-            <div className={`h-full ${left <= 5 ? 'bg-red-400' : 'bg-lav-400'}`} style={{ width: `${(Math.max(0, left) / TIME_LIMIT) * 100}%` }} />
+          <div className="mx-auto mb-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-pattern-line" aria-label={`剩下 ${left} 秒`}>
+            <div className={`h-full ${left <= 5 ? 'bg-accent' : 'bg-ink-2'}`} style={{ width: `${(Math.max(0, left) / TIME_LIMIT) * 100}%` }} />
           </div>
         )}
         {q.context && (
-          <p className="jp mb-3 text-sm text-ink-600 dark:text-lav-300" data-testid="context">
+          <p className="jp mb-3 text-sm text-muted" data-testid="context">
             上一句：{q.context}
           </p>
         )}
         {q.mode === 'listening' ? (
-          <button className="btn-secondary mx-auto my-4 h-24 w-24 rounded-full text-4xl" onClick={say} aria-label="播放發音" data-testid="play-audio">
-            🔊
+          <button className="btn-secondary mx-auto my-4 h-24 w-24 rounded-full" onClick={say} aria-label="播放發音" data-testid="play-audio">
+            <Volume2 size={40} strokeWidth={1.75} aria-hidden />
           </button>
         ) : (
           <div className={`jp break-words font-bold ${promptSize}`} data-testid="prompt">
             {zhPrompt ? <span className="font-sans">{q.prompt}</span> : q.prompt}
           </div>
         )}
-        {q.promptSub && <p className="mt-3 text-sm text-ink-600 dark:text-lav-300">{q.promptSub}</p>}
-        {q.mode === 'listening' && !audioSupported() && <p className="mt-2 text-sm text-red-600">這個瀏覽器不支援語音，無法播放。</p>}
+        {q.promptSub && <p className="mt-3 text-sm text-muted">{q.promptSub}</p>}
+        {q.mode === 'listening' && !audioSupported() && <p className="mt-2 text-sm text-accent">這個瀏覽器不支援語音，無法播放。</p>}
       </section>
 
       {kind === 'reveal' ? (
@@ -259,13 +271,13 @@ export function PracticeRunner({
       ) : kind === 'reorder' ? (
         <div className="space-y-3" data-testid="reorder">
           <div
-            className={`jp flex min-h-14 flex-wrap items-center gap-2 rounded-2xl border-2 border-dashed p-3 text-xl ${answered ? (correct ? 'border-emerald-400' : 'border-red-400') : 'border-sakura-200 dark:border-ink-600'}`}
+            className={`jp flex min-h-14 flex-wrap items-center gap-2 rounded-2xl border-[1.5px] border-dashed bg-surface p-3 text-xl ${answered ? (correct ? 'border-ok' : 'border-accent') : 'border-dash'}`}
             aria-label="你排出的句子"
             data-testid="reorder-built"
           >
-            {picked.length === 0 && <span className="font-sans text-sm text-ink-600 dark:text-lav-300">依序點選下面的字卡</span>}
+            {picked.length === 0 && <span className="font-sans text-sm text-muted">依序點選下面的字卡</span>}
             {picked.map((i) => (
-              <button key={i} className="rounded-xl bg-lav-100 px-3 py-1.5 dark:bg-ink-700" disabled={answered} onClick={() => setPicked(picked.filter((j) => j !== i))} aria-label={`收回「${tiles[i]}」`}>
+              <button key={i} className="min-h-11 rounded-xl border-[1.5px] border-line-soft bg-pattern-line px-3" disabled={answered} onClick={() => setPicked(picked.filter((j) => j !== i))} aria-label={`收回「${tiles[i]}」`}>
                 {tiles[i]}
               </button>
             ))}
@@ -273,8 +285,8 @@ export function PracticeRunner({
           {!answered && (
             <div className="flex flex-wrap gap-2" role="group" aria-label="字卡">
               {remaining.map((i, n) => (
-                <button key={i} className="jp flex items-center gap-1.5 rounded-xl border-2 border-sakura-200 bg-white px-3 py-2 text-xl hover:border-lav-400 dark:border-ink-600 dark:bg-ink-800" onClick={() => pickTile(i)} data-testid="tile">
-                  <span className="font-sans text-xs text-ink-600 dark:text-lav-300">{n + 1}</span>
+                <button key={i} className="jp flex min-h-11 items-center gap-1.5 rounded-xl border-[1.5px] border-ink bg-surface px-3 py-1.5 text-xl transition-colors hover:bg-pattern-line" onClick={() => pickTile(i)} data-testid="tile">
+                  <span className="font-sans text-xs text-muted">{n + 1}</span>
                   {tiles[i]}
                 </button>
               ))}
@@ -312,11 +324,11 @@ export function PracticeRunner({
           {q.options.map((o, i) => {
             const isAnswer = o.text === q.answer
             const isChosen = o.text === chosen
-            let cls = 'border-sakura-200 bg-white hover:border-lav-400 hover:bg-lav-50 dark:border-ink-600 dark:bg-ink-800 dark:hover:bg-ink-700'
+            let cls = 'border-ink bg-surface hover:bg-pattern-line'
             if (answered) {
-              if (isAnswer) cls = 'border-emerald-400 bg-emerald-50 text-emerald-800 anim-pop dark:bg-emerald-950/60 dark:text-emerald-200'
-              else if (isChosen) cls = 'border-red-400 bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-200'
-              else cls = 'border-sakura-100 bg-white opacity-50 dark:border-ink-700 dark:bg-ink-800'
+              if (isAnswer) cls = 'border-ok bg-ok-soft text-ok anim-pop'
+              else if (isChosen) cls = 'border-accent bg-accent-soft text-accent'
+              else cls = 'border-line-soft bg-surface opacity-50'
             }
             return (
               <button
@@ -325,12 +337,12 @@ export function PracticeRunner({
                 onClick={() => answer(o.text)}
                 data-testid="option"
                 data-correct={isAnswer ? 'true' : 'false'}
-                className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition-colors ${cls}`}
+                className={`flex min-h-14 items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3 text-left transition-colors ${cls}`}
               >
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-lav-100 text-sm font-bold text-lav-700 dark:bg-ink-600 dark:text-lav-100">{i + 1}</span>
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-current text-sm font-bold">{i + 1}</span>
                 <span className={`${q.mode === 'kanji2meaning' ? 'text-base' : 'jp text-xl'} break-words`}>{o.text}</span>
-                {answered && isAnswer && <span className="ml-auto" aria-label="正確答案">⭕</span>}
-                {answered && isChosen && !isAnswer && <span className="ml-auto" aria-label="你的答案">❌</span>}
+                {answered && isAnswer && <CircleCheck className="ml-auto shrink-0" size={22} aria-label="正確答案" />}
+                {answered && isChosen && !isAnswer && <CircleX className="ml-auto shrink-0" size={22} aria-label="你的答案" />}
               </button>
             )
           })}
@@ -339,10 +351,10 @@ export function PracticeRunner({
 
       {answered && (
         <section ref={feedbackRef} className="card anim-in space-y-3 p-5" data-testid="feedback" data-correct={correct ? 'true' : 'false'}>
-          <div className={`text-lg font-bold ${correct ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'}`}>
-            {kind === 'reveal' ? <span className="text-ink-800 dark:text-lav-100">參考翻譯</span> : correct ? '答對了！' : chosen === null ? '時間到！' : '答錯了'}
+          <div className={`text-lg font-bold ${correct ? 'text-ok ' : 'text-accent '}`}>
+            {kind === 'reveal' ? <span className="text-ink-2">參考翻譯</span> : correct ? '答對了！' : chosen === null ? '時間到！' : '答錯了'}
             {!correct && errorType && (
-              <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-sm font-medium dark:bg-red-950" data-testid="error-type">
+              <span className="ml-2 rounded-full border border-accent px-2 py-0.5 text-sm font-medium" data-testid="error-type">
                 {ERROR_LABELS[errorType]}
               </span>
             )}
@@ -356,18 +368,18 @@ export function PracticeRunner({
                     p.kind === 'same' ? (
                       <span key={i}>{p.text}</span>
                     ) : p.kind === 'missing' ? (
-                      <span key={i} className="rounded bg-emerald-100 px-0.5 text-emerald-800 underline dark:bg-emerald-950 dark:text-emerald-200" title="課本有、你沒寫">
+                      <span key={i} className="rounded bg-ok-soft px-0.5 text-ok underline" title="課本有、你沒寫">
                         {p.text}
                       </span>
                     ) : (
-                      <span key={i} className="rounded bg-red-100 px-0.5 text-red-700 line-through dark:bg-red-950 dark:text-red-200" title="你多寫或寫錯">
+                      <span key={i} className="rounded bg-accent-soft px-0.5 text-accent line-through" title="你多寫或寫錯">
                         {p.text}
                       </span>
                     ),
                   )}
                 </span>
               </p>
-              <p className="text-xs text-ink-600 dark:text-lav-300">綠底＝課本有、你漏掉的字；紅字刪除線＝你多寫或寫錯的字。用了不同漢字或假名寫法也會標出來。</p>
+              <p className="text-xs text-muted">綠底＝課本有、你漏掉的字；紅字刪除線＝你多寫或寫錯的字。用了不同漢字或假名寫法也會標出來。</p>
               {!override && (
                 <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setOverride(true)} data-testid="override">
                   其實我寫對了（只是寫法不同）
@@ -381,28 +393,28 @@ export function PracticeRunner({
             </p>
           )}
           {q.explain && (
-            <p className="whitespace-pre-line rounded-xl bg-lav-50 p-3 text-sm dark:bg-ink-700" data-testid="explain">
+            <p className="whitespace-pre-line rounded-xl border border-dashed border-dash bg-washi p-3 text-sm" data-testid="explain">
               {q.explain}
             </p>
           )}
           {w.kind === 'sentence' ? (
             <div className="space-y-1">
               <p className="jp text-xl font-bold">
-                {w.speaker && <span className="mr-1 text-base font-normal text-ink-600 dark:text-lav-300">{w.speaker}：</span>}
+                {w.speaker && <span className="mr-1 text-base font-normal text-muted">{w.speaker}：</span>}
                 {w.kanji}
               </p>
-              {w.reading && <p className="jp text-sm text-lav-700 dark:text-lav-200">{w.reading}</p>}
+              {w.reading && <p className="jp text-sm text-ink-2">{w.reading}</p>}
               <p>{w.meaning}</p>
             </div>
           ) : w.kind === 'grammar' ? null : (
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="jp text-2xl font-bold">{w.kanji || w.reading}</span>
-            <span className="jp text-lg text-lav-700 dark:text-lav-200">{w.reading}</span>
-            {w.pos && <span className="rounded bg-lav-100 px-1.5 text-xs dark:bg-ink-600">{w.pos}</span>}
+            <span className="jp text-lg text-ink-2">{w.reading}</span>
+            {w.pos && <span className="rounded border border-line-soft px-1.5 text-xs text-muted">{w.pos}</span>}
             <span>{w.meaning}</span>
             {audioSupported() && (
-              <button className="btn-ghost px-2 py-0.5" onClick={say} aria-label="重播發音">
-                🔊
+              <button className="btn-ghost w-11 px-0" onClick={say} aria-label="重播發音">
+                <Volume2 size={18} aria-hidden />
               </button>
             )}
           </div>
@@ -410,11 +422,11 @@ export function PracticeRunner({
           {!w.kind && w.example && (
             <p className="text-sm">
               <span className="jp">{w.example}</span>
-              {w.exampleTranslation && <span className="block text-ink-600 dark:text-lav-300">{w.exampleTranslation}</span>}
+              {w.exampleTranslation && <span className="block text-muted">{w.exampleTranslation}</span>}
             </p>
           )}
           <div>
-            <p className="mb-2 text-xs text-ink-600 dark:text-lav-300">
+            <p className="mb-2 text-xs text-muted">
               {kind === 'reveal' ? '對照參考翻譯，你翻得如何？選「重來」＝翻錯，會收進錯題本' : w.kind === 'sentence' ? '自評這句記得多熟' : w.kind === 'grammar' ? '自評這個文法記得多熟' : '自評這個字記得多熟'}（鍵盤 1–4，Enter = {RATING_LABELS[defaultRating]}）
             </p>
             <div className="grid grid-cols-4 gap-2">
@@ -423,7 +435,7 @@ export function PracticeRunner({
                   key={r}
                   onClick={() => rate(r)}
                   data-testid={`rate-${r}`}
-                  className={`btn flex-col gap-0 px-1 py-2 ${r === defaultRating ? 'bg-sakura-500 text-white hover:bg-sakura-600' : 'bg-lav-100 text-lav-800 hover:bg-lav-200 dark:bg-ink-700 dark:text-lav-100'}`}
+                  className={`${r === defaultRating ? 'btn-primary' : 'btn-secondary'} flex-col gap-0 rounded-2xl px-1 py-2`}
                 >
                   <span>{RATING_LABELS[r]}</span>
                   {previews && <span className="text-[11px] opacity-80">{formatInterval(previews[r])}</span>}
@@ -433,7 +445,7 @@ export function PracticeRunner({
           </div>
         </section>
       )}
-      <p className="hidden text-center text-xs text-ink-600 sm:block dark:text-lav-300">
+      <p className="hidden text-center text-xs text-muted sm:block">
         鍵盤：{kind === 'reorder' ? '數字鍵選字卡・Backspace 收回' : kind === 'reveal' ? 'Enter 看答案' : kind === 'choice' ? '1–4 選答案' : 'Enter 送出'}・作答後 1–4 自評、Enter 下一題・Space 重播發音
       </p>
     </div>

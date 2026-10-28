@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
 import { useAppData, useSettings, type AppData } from '../hooks/useData'
 import { ScopePicker, parseScope, type ScopeValue } from '../components/ScopePicker'
 import { PracticeRunner, type AnswerRecord } from '../components/PracticeRunner'
@@ -140,8 +141,10 @@ export function PracticePage() {
     return (
       <div className="mx-auto max-w-2xl space-y-4" data-testid="practice-result">
         <section className="card p-6 text-center">
-          <div className="text-5xl">{right === result.length ? '🎉' : right / result.length >= 0.7 ? '🌸' : '💪'}</div>
-          <h1 className="mt-2 text-2xl font-bold">練習完成</h1>
+          <span className="jp inline-block -rotate-3 rounded-lg border-2 border-accent px-3 py-1 font-mincho text-xl font-extrabold text-accent">
+            {right === result.length ? '満点' : right / result.length >= 0.7 ? 'よくできました' : 'がんばろう'}
+          </span>
+          <h1 className="mt-4 text-2xl font-bold">練習完成</h1>
           <p className="mt-1 text-lg" data-testid="result-score">
             答對 {right} / {result.length} 題
           </p>
@@ -149,13 +152,13 @@ export function PracticePage() {
         {wrong.length > 0 && (
           <section className="card p-5">
             <h2 className="mb-3 font-bold">答錯的題目（已加入錯題本）</h2>
-            <ul className="divide-y divide-sakura-100 dark:divide-ink-700">
+            <ul className="divide-y divide-line-soft">
               {wrong.map((r, i) => (
                 <li key={i} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2">
                   <span className="jp text-lg font-bold">{r.question.word.kanji || r.question.word.reading}</span>
-                  <span className="jp text-emerald-700 dark:text-emerald-300">{r.question.answer}</span>
-                  {r.chosen && <span className="jp text-red-600 line-through dark:text-red-300">{r.chosen}</span>}
-                  {r.errorType && <span className="rounded-full bg-red-100 px-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-200">{ERROR_LABELS[r.errorType]}</span>}
+                  <span className="jp text-ok">{r.question.answer}</span>
+                  {r.chosen && <span className="jp text-accent line-through">{r.chosen}</span>}
+                  {r.errorType && <span className="rounded-full border border-accent px-2 text-xs text-accent">{ERROR_LABELS[r.errorType]}</span>}
                 </li>
               ))}
             </ul>
@@ -193,7 +196,7 @@ export function PracticePage() {
           <div className="space-y-3" role="radiogroup" aria-label="題型">
             {MODE_GROUPS.map((g) => (
               <div key={g.title}>
-                <p className="mb-1 text-xs font-semibold text-ink-600 dark:text-lav-300">{g.title}</p>
+                <p className="mb-1 text-xs font-semibold text-muted">{g.title}</p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   {g.modes.map((m) => {
                     const disabled = m === 'listening' && !audioSupported()
@@ -206,11 +209,11 @@ export function PracticePage() {
                         disabled={disabled}
                         onClick={() => setMode(m)}
                         data-testid={'mode-' + m}
-                        className={`rounded-xl border-2 px-3 py-2 text-left text-sm transition-colors disabled:opacity-40 ${mode === m ? 'border-sakura-400 bg-sakura-50 font-semibold dark:bg-ink-700' : 'border-sakura-100 hover:border-lav-300 dark:border-ink-600'} ${n === 0 && mode !== m ? 'opacity-50' : ''}`}
+                        className={`min-h-11 rounded-xl border-[1.5px] px-3 py-2 text-left text-sm transition-colors disabled:opacity-40 ${mode === m ? 'border-ink bg-ink font-bold text-surface' : 'border-line-soft bg-surface hover:border-ink'} ${n === 0 && mode !== m ? 'opacity-50' : ''}`}
                       >
                         {MODE_LABELS[m]}
-                        {m === 'kanji2reading' && <span className="ml-1 rounded bg-sakura-200 px-1 text-[10px] text-sakura-800">考試題型</span>}
-                        <span className="ml-1 text-xs font-normal text-ink-600 dark:text-lav-300">{n}</span>
+                        {m === 'kanji2reading' && <span className="ml-1 rounded border border-current px-1 text-[10px] font-medium">考試題型</span>}
+                        <span className="ml-1 text-xs font-normal opacity-70">{n}</span>
                       </button>
                     )
                   })}
@@ -219,11 +222,11 @@ export function PracticePage() {
             ))}
           </div>
           {audioSupported() && !voiceOk && (
-            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300" data-testid="no-ja-voice">
+            <p className="mt-2 text-xs text-accent" data-testid="no-ja-voice">
               這台裝置沒有日文語音，所以不會發音（避免用中文語音唸錯）{mode === 'listening' && '，「聽音選字」也無法使用'}。安裝方式見「設定 → 發音」。
             </p>
           )}
-          {mode === 'listening' && !audioSupported() && <p className="mt-2 text-xs text-red-600">這個瀏覽器不支援語音合成，請改用其他題型。</p>}
+          {mode === 'listening' && !audioSupported() && <p className="mt-2 text-xs text-accent">這個瀏覽器不支援語音合成，請改用其他題型。</p>}
         </fieldset>
         <div className="flex flex-wrap items-end gap-6">
           <div>
@@ -239,16 +242,17 @@ export function PracticePage() {
             <Toggle checked={timed} onChange={setTimed} label="限時（每題 20 秒）" />
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sakura-100 pt-4 dark:border-ink-700">
-          <p className="text-sm text-ink-600 dark:text-lav-300" data-testid="eligible-count">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-4">
+          <p className="text-sm text-muted" data-testid="eligible-count">
             可出題：{eligibleCount} 題{eligibleCount < count && eligibleCount > 0 && `（不足 ${count} 題，會全部出）`}
           </p>
           <button className="btn-primary px-6 py-2.5 text-base" disabled={!scope.deckIds.length || eligibleCount === 0} onClick={() => start()} data-testid="start-practice">
-            開始練習 →
+            開始練習
+            <ArrowRight size={18} aria-hidden />
           </button>
         </div>
         {eligibleCount === 0 && scope.deckIds.length > 0 && (
-          <p className="text-sm text-amber-700 dark:text-amber-300">
+          <p className="text-sm text-accent">
             這個範圍沒有可以出「{MODE_LABELS[mode]}」的題目{NEED[mode] ?? ''}。
             {scope.scope.kind === 'due' && ' 今天的複習都完成了！'}
             <button className="ml-1 underline" onClick={() => setScope({ ...scope, scope: { kind: 'all' } })}>

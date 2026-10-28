@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Check, Download, Upload, Volume2 } from 'lucide-react'
 import { useSettings } from '../hooks/useData'
 import { updateSettings } from '../db/repo'
 import { exportAll, restoreAll, wipeAll } from '../db/backup'
@@ -34,7 +35,7 @@ export function SettingsPage() {
       <section className="card space-y-3 p-5">
         <h2 className="font-bold">發音</h2>
         {!audioSupported() ? (
-          <p className="text-sm text-red-600">這個瀏覽器不支援語音合成（Web Speech API），「聽音選字」無法使用。</p>
+          <p className="text-sm text-accent">這個瀏覽器不支援語音合成（Web Speech API），「聽音選字」無法使用。</p>
         ) : (
           <>
             <Toggle checked={s.ttsEnabled} onChange={(v) => updateSettings({ ttsEnabled: v })} label="作答後自動唸出讀音" />
@@ -43,18 +44,19 @@ export function SettingsPage() {
               <label htmlFor="rate" className="shrink-0">
                 語速 {s.ttsRate.toFixed(1)}
               </label>
-              <input id="rate" type="range" min={0.5} max={1.5} step={0.1} value={s.ttsRate} onChange={(e) => updateSettings({ ttsRate: Number(e.target.value) })} className="flex-1 accent-sakura-500" />
+              <input id="rate" type="range" min={0.5} max={1.5} step={0.1} value={s.ttsRate} onChange={(e) => updateSettings({ ttsRate: Number(e.target.value) })} className="flex-1 accent-accent" />
               <button className="btn-secondary" onClick={() => playWord({ kanji: '勉強', reading: 'べんきょう' }, s.ttsRate)}>
-                🔊 試聽
+                <Volume2 size={16} aria-hidden />
+                試聽
               </button>
             </div>
             {hasAudioFiles() && (
-              <p className="text-xs text-ink-600 dark:text-lav-300" data-testid="audio-credit">
+              <p className="text-xs text-muted" data-testid="audio-credit">
                 單字發音：{audioCreditText()}（VOICEVOX 產生的音檔）{!hasJapaneseVoice() && '。沒有音檔的字需要裝置的日文語音才會唸'}
               </p>
             )}
-            {!voiceOk && <p className="text-xs text-amber-700 dark:text-amber-300">找不到日文語音，目前不會發音。Windows：設定 → 時間與語言 → 語音 → 管理語音「新增語音」→ 選「日本語」，裝好後把瀏覽器完全關掉再打開；Mac：系統設定 → 輔助使用 → 朗讀內容 → 系統聲音 → 管理聲音 → 日文；iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音 → 日文。</p>}
-            {isSafari() && <p className="text-xs text-ink-600 dark:text-lav-300">Safari 第一次播放需要你先點一下播放按鈕，之後才會自動唸。</p>}
+            {!voiceOk && <p className="text-xs text-accent">找不到日文語音，目前不會發音。Windows：設定 → 時間與語言 → 語音 → 管理語音「新增語音」→ 選「日本語」，裝好後把瀏覽器完全關掉再打開；Mac：系統設定 → 輔助使用 → 朗讀內容 → 系統聲音 → 管理聲音 → 日文；iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音 → 日文。</p>}
+            {isSafari() && <p className="text-xs text-muted">Safari 第一次播放需要你先點一下播放按鈕，之後才會自動唸。</p>}
           </>
         )}
       </section>
@@ -84,9 +86,12 @@ export function SettingsPage() {
       <section className="card space-y-3 p-5">
         <h2 className="font-bold">安裝成 App</h2>
         {isStandalone() ? (
-          <p className="text-sm">已經以 App 模式開啟 ✅（離線也能使用）</p>
+          <p className="flex items-center gap-1.5 text-sm text-ok">
+            <Check size={16} aria-hidden />
+            已經以 App 模式開啟（離線也能使用）
+          </p>
         ) : installable ? (
-          <button className="btn-primary" onClick={() => promptInstall().then(() => setInstallable(false))}>
+          <button className="btn-secondary" onClick={() => promptInstall().then(() => setInstallable(false))}>
             安裝到這台裝置
           </button>
         ) : isIOS() ? (
@@ -100,10 +105,10 @@ export function SettingsPage() {
 
       <section className="card space-y-3 p-5">
         <h2 className="font-bold">資料備份與還原</h2>
-        <p className="text-sm text-ink-600 dark:text-lav-300">把所有單字庫、單字、進度、作答紀錄、設定匯出成一個 JSON 檔；還原時會清空目前資料並完整復原。</p>
+        <p className="text-sm text-muted">把所有單字庫、單字、進度、作答紀錄、設定匯出成一個 JSON 檔；還原時會清空目前資料並完整復原。</p>
         <div className="flex flex-wrap gap-2">
           <button
-            className="btn-primary"
+            className="btn-secondary"
             data-testid="backup-export"
             onClick={async () => {
               const b = await exportAll()
@@ -111,10 +116,12 @@ export function SettingsPage() {
               setMsg('已下載備份檔')
             }}
           >
-            ⬇ 匯出備份
+            <Download size={16} aria-hidden />
+            匯出備份
           </button>
           <label className="btn-secondary cursor-pointer">
-            ⬆ 從備份還原
+            <Upload size={16} aria-hidden />
+            從備份還原
             <input
               type="file"
               accept=".json,application/json"
@@ -138,7 +145,7 @@ export function SettingsPage() {
           </label>
         </div>
         {pendingRestore && (
-          <div className="anim-in rounded-xl bg-amber-50 p-3 text-sm dark:bg-amber-950/40" role="alert">
+          <div className="anim-in rounded-xl border-[1.5px] border-accent bg-accent-soft p-3 text-sm" role="alert">
             <p>
               要用「{pendingRestore.name}」還原嗎？內含 {pendingRestore.counts}。<strong>目前這台裝置上的資料會被清空。</strong>
             </p>
@@ -165,15 +172,15 @@ export function SettingsPage() {
           </div>
         )}
         {msg && (
-          <p className="text-sm text-emerald-700 dark:text-emerald-300" role="status" data-testid="settings-msg">
+          <p className="text-sm text-ok" role="status" data-testid="settings-msg">
             {msg}
           </p>
         )}
-        {err && <p className="text-sm text-red-600">{err}</p>}
+        {err && <p className="text-sm text-accent">{err}</p>}
       </section>
 
       <section className="card space-y-3 p-5">
-        <h2 className="font-bold text-red-600 dark:text-red-400">危險區域</h2>
+        <h2 className="font-bold text-accent">危險區域</h2>
         <div className="flex flex-wrap gap-2">
           <ConfirmButton
             confirmText="清空這台裝置上的所有資料？（建議先匯出備份）"
@@ -188,7 +195,7 @@ export function SettingsPage() {
         </div>
       </section>
 
-      <p className="text-center text-xs text-ink-600 dark:text-lav-300">日文單字練習 v{__APP_VERSION__}・資料只存在你的裝置與你自己的 Supabase 帳號</p>
+      <p className="text-center text-xs text-muted">日文單字練習 v{__APP_VERSION__}・資料只存在你的裝置與你自己的 Supabase 帳號</p>
     </div>
   )
 }

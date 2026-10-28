@@ -92,7 +92,7 @@ export async function seedDemoIfEmpty(): Promise<boolean> {
     if (await getMeta('demoSeeded', false)) return false
     await setMeta('demoSeeded', true)
     if ((await db.decks.count()) > 0) return false
-    await createDeck({ id: DEMO_DECK_ID, name: '示範單字庫', color: '#f472b6', icon: '🌸', dailyNewLimit: 20 })
+    await createDeck({ id: DEMO_DECK_ID, name: '示範單字庫', color: '#E8A48A', icon: '単', dailyNewLimit: 20 })
     const words = await db.words.toArray()
     await importDrafts(DEMO_DECK_ID, checkDuplicates(demoDrafts(), words, [], DEMO_DECK_ID))
     return true

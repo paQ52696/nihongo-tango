@@ -145,7 +145,7 @@ export function getTheme(): Theme {
 export function applyTheme(t: Theme = getTheme()) {
   const dark = t === 'dark' || (t === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches)
   document.documentElement.classList.toggle('dark', !!dark)
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#1d1530' : '#f9a8c9')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#1f1d1a' : '#F4F1EA')
 }
 
 export function setTheme(t: Theme) {

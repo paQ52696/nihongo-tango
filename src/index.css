@@ -44,11 +44,13 @@
   --color-accent-hover: var(--accent-hover);
   --color-grid-line: var(--grid-line);
   --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-accent-soft: var(--accent-soft);
 }
 
 :root {
   color-scheme: light;
-  --mastery-new: #e4dfee;
+  --mastery-new: var(--line-soft);
   --bg: #f4f1ea; /* 和紙底色 */
   --pattern-line: #eae3d4; /* 青海波紋路線條 */
   --surface: #fffdf8; /* 卡片 */
@@ -61,13 +63,16 @@
   --accent-hover: #a3360a;
   --on-accent: #ffffff;
   --grid-line: #f5e1d7; /* 原稿用紙格線 */
-  --ok: #4f7a5a; /* 同步成功等狀態 */
+  --ok: #4f7a5a; /* 同步成功、答對等狀態 */
+  --ok-soft: #e6eee5; /* 答對的淡底 */
+  --accent-soft: #f8e6dc; /* 答錯、警告的淡底 */
+  --overlay: rgba(43, 41, 37, 0.45);
   --watermark: #f3e3da;
   --header-bg: rgba(255, 253, 248, 0.92);
 }
 .dark {
   color-scheme: dark;
-  --mastery-new: #4a3f6b;
+  --mastery-new: var(--line-soft);
   --bg: #1f1d1a;
   --pattern-line: #292622;
   --surface: #2a2723;
@@ -81,6 +86,9 @@
   --on-accent: #1f1d1a;
   --grid-line: #382c25;
   --ok: #86b591;
+  --ok-soft: #24302a;
+  --accent-soft: #3b2820;
+  --overlay: rgba(0, 0, 0, 0.55);
   --watermark: #3a2f29;
   --header-bg: rgba(42, 39, 35, 0.92);
 }
@@ -155,36 +163,41 @@ body {
   @apply inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm text-muted underline-offset-4 transition-colors hover:text-ink hover:underline;
 }
 
+/* 卡片：米白底、墨色邊框、硬陰影 */
 @utility card {
-  @apply rounded-2xl border border-sakura-100 bg-white/90 shadow-sm dark:border-ink-700 dark:bg-ink-800/90;
+  @apply rounded-2xl border-[1.5px] border-ink bg-surface;
+  box-shadow: 4px 4px 0 var(--line-soft);
 }
 
 @utility btn {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
 }
+/* 每頁的主要動作（一頁一個）：朱色實心＋硬陰影 */
 @utility btn-primary {
-  @apply btn bg-sakura-500 text-white hover:bg-sakura-600 dark:bg-sakura-500 dark:hover:bg-sakura-400;
+  @apply btn border-[1.5px] border-ink bg-accent font-bold text-[var(--on-accent)] hover:bg-accent-hover active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
+  box-shadow: 3px 3px 0 var(--ink);
 }
+/* 其他按鈕：描邊膠囊，hover 反轉 */
 @utility btn-secondary {
-  @apply btn bg-lav-100 text-lav-700 hover:bg-lav-200 dark:bg-ink-700 dark:text-lav-100 dark:hover:bg-ink-600;
+  @apply btn border-[1.5px] border-ink bg-surface text-ink hover:bg-ink hover:text-surface;
 }
 @utility btn-ghost {
-  @apply btn text-ink-700 hover:bg-sakura-100 dark:text-lav-100 dark:hover:bg-ink-700;
+  @apply btn text-ink-2 hover:bg-pattern-line;
 }
 @utility btn-danger {
-  @apply btn bg-red-500 text-white hover:bg-red-600;
+  @apply btn border-[1.5px] border-accent bg-surface text-accent hover:bg-accent hover:text-[var(--on-accent)];
 }
 
 @utility input {
-  @apply w-full rounded-xl border border-sakura-200 bg-white px-3 py-2 text-base outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 dark:border-ink-600 dark:bg-ink-900 dark:focus:ring-ink-600;
+  @apply min-h-11 w-full rounded-xl border-[1.5px] border-dash bg-surface px-3 py-2 text-base text-ink outline-none placeholder:text-muted focus:border-ink focus:ring-1 focus:ring-ink;
 }
 
 @utility label {
-  @apply mb-1 block text-sm font-medium text-ink-700 dark:text-lav-200;
+  @apply mb-1 block text-sm font-medium text-ink-2;
 }
 
 @utility chip {
-  @apply inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm transition-colors;
+  @apply inline-flex min-h-11 items-center gap-1 rounded-full border-[1.5px] px-3.5 text-sm transition-colors;
 }
 
 /* 答對／答錯回饋動畫 */
@@ -244,4 +257,19 @@ body {
 
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 標題一律用圓體 */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+  }
+  /* 展開／收合的標題也要夠大好點 */
+  summary {
+    min-height: 44px;
+    padding-block: 10px;
+    margin-block: -10px;
+  }
 }
