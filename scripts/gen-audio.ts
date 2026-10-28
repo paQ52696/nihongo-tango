@@ -17,7 +17,7 @@ const ENGINE = process.env.VOICEVOX_URL || 'http://127.0.0.1:50021'
 const OUT = 'public/audio'
 const MANIFEST = join(OUT, 'index.json')
 const SAMPLE_RATE = 24000
-const KBPS = 48
+const KBPS = 96 // 48 kbps 壓縮痕跡明顯；96 kbps 每個字約 6 KB
 
 type W = { kanji: string; reading: string }
 

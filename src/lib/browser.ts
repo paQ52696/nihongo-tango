@@ -70,6 +70,8 @@ export function speak(text: string, rate = 0.9): boolean {
 let audioKeys = new Set<string>()
 let audioCredit = ''
 let audioEl: HTMLAudioElement | null = null
+/** 設定的預設語速（與 DEFAULT_SETTINGS.ttsRate 相同） */
+const DEFAULT_TTS_RATE = 0.9
 
 /** 載入音檔清單（App 啟動時呼叫一次；離線時由 Service Worker 快取提供） */
 export async function loadAudioManifest() {
@@ -112,7 +114,13 @@ export function playWord(word: Pick<Word, 'kanji' | 'reading'>, rate = 0.9): boo
     if (ttsSupported()) window.speechSynthesis.cancel()
     audioEl?.pause()
     const a = new Audio(import.meta.env.BASE_URL + `audio/${key}.mp3`)
-    a.playbackRate = rate
+    // 語速設定是以瀏覽器語音為準（預設 0.9 偏慢）；音檔本身就是自然語速，預設時原速播放。
+    // 變速播放要靠瀏覽器即時伸縮聲音，聲音會變悶、變粗糙，所以只有使用者調整語速時才變速
+    const r = rate / DEFAULT_TTS_RATE
+    if (Math.abs(r - 1) > 0.01) {
+      a.preservesPitch = true // 變速時維持音高，不要變低沉
+      a.playbackRate = r
+    }
     audioEl = a
     a.play().catch((e: Error) => {
       // 自動播放被擋（Safari 第一次）不改用語音；檔案壞掉或抓不到才改用瀏覽器語音
