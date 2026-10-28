@@ -15,7 +15,8 @@ const asWord = (d: ReturnType<typeof rowsToDrafts>[number], i: number): Word =>
   ({ id: 'w' + i, updated_at: '', deleted: false, favorite: false, kanji: d.kanji, reading: d.reading, pos: d.pos, meaning: d.meaning, example: d.example, exampleTranslation: d.exampleTranslation, tags: d.tags, ...d.extra }) as Word
 
 describe.skipIf(!existsSync(SENT))('期中考課文句子', () => {
-  const t = parseCsv(readFileSync(SENT, 'utf8'))
+  // describe.skipIf 跳過時這段仍會執行（收集測試），所以檔案不存在時給空表（GitHub 上沒有 data/）
+  const t = existsSync(SENT) ? parseCsv(readFileSync(SENT, 'utf8')) : { headers: [], rows: [] }
   const drafts = rowsToDrafts(t, guessMapping(t.headers), guessKind(t))
   const words = drafts.map(asWord)
 
@@ -41,7 +42,7 @@ describe.skipIf(!existsSync(SENT))('期中考課文句子', () => {
 })
 
 describe.skipIf(!existsSync(VOCAB))('期中考單字', () => {
-  const t = parseJson(readFileSync(VOCAB, 'utf8'))
+  const t = existsSync(VOCAB) ? parseJson(readFileSync(VOCAB, 'utf8')) : { headers: [], rows: [] }
   const drafts = rowsToDrafts(t, guessMapping(t.headers), 'word')
   const words = drafts.map(asWord)
 
