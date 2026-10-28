@@ -1,4 +1,6 @@
 // 瀏覽器相關工具：發音、主題、下載、安裝 PWA
+import { audioKey, speakTextFor } from './audioKey'
+import type { Word } from '../types'
 
 // ---------- 發音（Web Speech API） ----------
 let voices: SpeechSynthesisVoice[] = []
@@ -62,6 +64,63 @@ export function speak(text: string, rate = 0.9): boolean {
     synth.speak(u)
   }
   return true
+}
+
+// ---------- VOICEVOX 音檔（scripts/gen-audio.ts 產生；沒有音檔的字改用上面的瀏覽器語音） ----------
+let audioKeys = new Set<string>()
+let audioCredit = ''
+let audioEl: HTMLAudioElement | null = null
+
+/** 載入音檔清單（App 啟動時呼叫一次；離線時由 Service Worker 快取提供） */
+export async function loadAudioManifest() {
+  try {
+    const res = await fetch(import.meta.env.BASE_URL + 'audio/index.json')
+    if (!res.ok) return
+    const m: { keys?: string[]; credit?: string } = await res.json()
+    audioKeys = new Set(m.keys ?? [])
+    audioCredit = m.credit ?? ''
+    voiceListeners.forEach((f) => f())
+  } catch {
+    /* 沒有音檔也能用 */
+  }
+}
+
+/** 有沒有任何 VOICEVOX 音檔 */
+export function hasAudioFiles() {
+  return audioKeys.size > 0
+}
+
+/** 音檔的聲音標註，例如「VOICEVOX:四国めたん」（使用條款要求標示） */
+export function audioCreditText() {
+  return audioCredit
+}
+
+/** 能不能播放聲音（音檔或瀏覽器語音其中一種） */
+export function audioSupported() {
+  return hasAudioFiles() || ttsSupported()
+}
+
+/** 這台裝置能不能唸日文：有音檔，或有日文語音 */
+export function canSpeakJapanese() {
+  return hasAudioFiles() || hasJapaneseVoice()
+}
+
+/** 唸一個單字：有 VOICEVOX 音檔就播音檔，否則用瀏覽器語音 */
+export function playWord(word: Pick<Word, 'kanji' | 'reading'>, rate = 0.9): boolean {
+  const key = audioKey(word)
+  if (audioKeys.has(key) && typeof Audio !== 'undefined') {
+    if (ttsSupported()) window.speechSynthesis.cancel()
+    audioEl?.pause()
+    const a = new Audio(import.meta.env.BASE_URL + `audio/${key}.mp3`)
+    a.playbackRate = rate
+    audioEl = a
+    a.play().catch((e: Error) => {
+      // 自動播放被擋（Safari 第一次）不改用語音；檔案壞掉或抓不到才改用瀏覽器語音
+      if (e.name !== 'NotAllowedError' && audioEl === a) speak(speakTextFor(word), rate)
+    })
+    return true
+  }
+  return speak(speakTextFor(word), rate)
 }
 
 // ---------- 主題（每台裝置各自設定，不同步） ----------

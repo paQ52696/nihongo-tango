@@ -6,7 +6,7 @@ import { seedDemoIfEmpty } from '../db/demo'
 import { setMeta } from '../db/schema'
 import { ConfirmButton, PageTitle, Segmented, Toggle } from '../components/ui'
 import { AccountPanel } from '../components/Layout'
-import { canPromptInstall, downloadText, getTheme, hasJapaneseVoice, isIOS, isSafari, isStandalone, onInstallAvailable, onVoicesChanged, promptInstall, setTheme, speak, ttsSupported, type Theme } from '../lib/browser'
+import { canPromptInstall, downloadText, getTheme, audioCreditText, audioSupported, canSpeakJapanese, hasAudioFiles, hasJapaneseVoice, isIOS, isSafari, isStandalone, onInstallAvailable, onVoicesChanged, playWord, promptInstall, setTheme, type Theme } from '../lib/browser'
 import { dateKey } from '../lib/dates'
 
 export function SettingsPage() {
@@ -16,9 +16,9 @@ export function SettingsPage() {
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [installable, setInstallable] = useState(canPromptInstall())
-  const [voiceOk, setVoiceOk] = useState(hasJapaneseVoice())
+  const [voiceOk, setVoiceOk] = useState(canSpeakJapanese())
   useEffect(() => onInstallAvailable(() => setInstallable(canPromptInstall())), [])
-  useEffect(() => onVoicesChanged(() => setVoiceOk(hasJapaneseVoice())), [])
+  useEffect(() => onVoicesChanged(() => setVoiceOk(canSpeakJapanese())), [])
   if (!s) return null
 
   return (
@@ -35,7 +35,7 @@ export function SettingsPage() {
 
       <section className="card space-y-3 p-5">
         <h2 className="font-bold">發音</h2>
-        {!ttsSupported() ? (
+        {!audioSupported() ? (
           <p className="text-sm text-red-600">這個瀏覽器不支援語音合成（Web Speech API），「聽音選字」無法使用。</p>
         ) : (
           <>
@@ -46,10 +46,15 @@ export function SettingsPage() {
                 語速 {s.ttsRate.toFixed(1)}
               </label>
               <input id="rate" type="range" min={0.5} max={1.5} step={0.1} value={s.ttsRate} onChange={(e) => updateSettings({ ttsRate: Number(e.target.value) })} className="flex-1 accent-sakura-500" />
-              <button className="btn-secondary" onClick={() => speak('こんにちは。にほんごの べんきょうを がんばりましょう。', s.ttsRate)}>
+              <button className="btn-secondary" onClick={() => playWord({ kanji: '学校', reading: 'がっこう' }, s.ttsRate)}>
                 🔊 試聽
               </button>
             </div>
+            {hasAudioFiles() && (
+              <p className="text-xs text-ink-600 dark:text-lav-300" data-testid="audio-credit">
+                單字發音：{audioCreditText()}（VOICEVOX 產生的音檔）{!hasJapaneseVoice() && '。沒有音檔的字需要裝置的日文語音才會唸'}
+              </p>
+            )}
             {!voiceOk && <p className="text-xs text-amber-700 dark:text-amber-300">找不到日文語音，目前不會發音。Windows：設定 → 時間與語言 → 語音 → 管理語音「新增語音」→ 選「日本語」，裝好後把瀏覽器完全關掉再打開；Mac：系統設定 → 輔助使用 → 朗讀內容 → 系統聲音 → 管理聲音 → 日文；iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音 → 日文。</p>}
             {isSafari() && <p className="text-xs text-ink-600 dark:text-lav-300">Safari 第一次播放需要你先點一下播放按鈕，之後才會自動唸。</p>}
           </>

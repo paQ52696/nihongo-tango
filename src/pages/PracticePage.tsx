@@ -8,7 +8,7 @@ import { selectCards } from '../lib/session'
 import { buildQuestion, canAsk, MODE_LABELS, type Question } from '../lib/questions'
 import { buildKanjiDict, makeRng, shuffle } from '../lib/distractors'
 import { ERROR_LABELS } from '../lib/errorTypes'
-import { hasJapaneseVoice, onVoicesChanged, ttsSupported } from '../lib/browser'
+import { audioSupported, canSpeakJapanese, onVoicesChanged } from '../lib/browser'
 import { DEFAULT_SETTINGS } from '../db/repo'
 import type { Card, QuestionMode, Settings } from '../types'
 
@@ -54,10 +54,10 @@ export function PracticePage() {
   const [timed, setTimed] = useState(false)
   const [questions, setQuestions] = useState<Question[] | null>(null)
   const [result, setResult] = useState<AnswerRecord[] | null>(null)
-  const [voiceOk, setVoiceOk] = useState(hasJapaneseVoice())
+  const [voiceOk, setVoiceOk] = useState(canSpeakJapanese())
   const [frozenCards, setFrozenCards] = useState<Map<string, Card>>(new Map())
 
-  useEffect(() => onVoicesChanged(() => setVoiceOk(hasJapaneseVoice())), [])
+  useEffect(() => onVoicesChanged(() => setVoiceOk(canSpeakJapanese())), [])
   useEffect(() => {
     if (data && !scope) setScope(parseScope(params, data))
   }, [data, scope, params])
@@ -155,7 +155,7 @@ export function PracticePage() {
           <legend className="label">③ 題型</legend>
           <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="題型">
             {MODES.map((m) => {
-              const disabled = m === 'listening' && !ttsSupported()
+              const disabled = m === 'listening' && !audioSupported()
               return (
                 <button
                   key={m}
@@ -171,12 +171,12 @@ export function PracticePage() {
               )
             })}
           </div>
-          {ttsSupported() && !voiceOk && (
+          {audioSupported() && !voiceOk && (
             <p className="mt-2 text-xs text-amber-700 dark:text-amber-300" data-testid="no-ja-voice">
               這台裝置沒有日文語音，所以不會發音（避免用中文語音唸錯）{mode === 'listening' && '，「聽音選字」也無法使用'}。安裝方式見「設定 → 發音」。
             </p>
           )}
-          {mode === 'listening' && !ttsSupported() && <p className="mt-2 text-xs text-red-600">這個瀏覽器不支援語音合成，請改用其他題型。</p>}
+          {mode === 'listening' && !audioSupported() && <p className="mt-2 text-xs text-red-600">這個瀏覽器不支援語音合成，請改用其他題型。</p>}
         </fieldset>
         <div className="flex flex-wrap items-end gap-6">
           <div>

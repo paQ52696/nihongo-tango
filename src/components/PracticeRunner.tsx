@@ -6,7 +6,7 @@ import { MODE_HINTS, checkTyping } from '../lib/questions'
 import { classifyError, ERROR_LABELS } from '../lib/errorTypes'
 import { previewIntervals, formatInterval, RATING_LABELS } from '../lib/srs'
 import { recordAnswer } from '../db/repo'
-import { speak, ttsSupported } from '../lib/browser'
+import { audioSupported, playWord } from '../lib/browser'
 import type { Card, ErrorType, Rating, Settings } from '../types'
 import { newId } from '../db/repo'
 import { anyToHiragana } from '../lib/kana'
@@ -47,7 +47,7 @@ export function PracticeRunner({
   const answered = chosen !== undefined
   const correct = answered && (q.mode === 'typing' ? checkTyping(q, chosen ?? '') : chosen === q.answer)
   const errorType = answered && !correct ? classifyError(q.mode, q.answer, q.mode === 'typing' ? normalizeTyped(chosen) : chosen, { altReadings: q.altReadings }) : null
-  const tts = settings.ttsEnabled && ttsSupported()
+  const tts = settings.ttsEnabled && audioSupported()
 
   // 進行中隱藏手機底部選單
   useEffect(() => {
@@ -65,7 +65,7 @@ export function PracticeRunner({
   }, [chosen])
 
   const say = useCallback(() => {
-    if (ttsSupported()) speak(q.speak, settings.ttsRate)
+    if (audioSupported()) playWord(q.word, settings.ttsRate)
   }, [q, settings.ttsRate])
 
   // 換題：重設計時、聽音題自動播放
@@ -87,7 +87,7 @@ export function PracticeRunner({
     (value: string | null) => {
       if (answered) return
       setChosen(value)
-      if (tts && q.mode !== 'listening') speak(q.speak, settings.ttsRate)
+      if (tts && q.mode !== 'listening') playWord(q.word, settings.ttsRate)
     },
     [answered, q, settings.ttsRate, tts],
   )
@@ -195,7 +195,7 @@ export function PracticeRunner({
           </div>
         )}
         {q.promptSub && <p className="mt-3 text-sm text-ink-600 dark:text-lav-300">{q.promptSub}</p>}
-        {q.mode === 'listening' && !ttsSupported() && <p className="mt-2 text-sm text-red-600">這個瀏覽器不支援語音，無法播放。</p>}
+        {q.mode === 'listening' && !audioSupported() && <p className="mt-2 text-sm text-red-600">這個瀏覽器不支援語音，無法播放。</p>}
       </section>
 
       {q.mode === 'typing' ? (
@@ -274,7 +274,7 @@ export function PracticeRunner({
             <span className="jp text-lg text-lav-700 dark:text-lav-200">{w.reading}</span>
             {w.pos && <span className="rounded bg-lav-100 px-1.5 text-xs dark:bg-ink-600">{w.pos}</span>}
             <span>{w.meaning}</span>
-            {ttsSupported() && (
+            {audioSupported() && (
               <button className="btn-ghost px-2 py-0.5" onClick={say} aria-label="重播發音">
                 🔊
               </button>

@@ -6,7 +6,7 @@ import { ConfirmButton, DeckTag, Empty, Modal, PageTitle } from '../components/u
 import { anyToHiragana, normalizeReading } from '../lib/kana'
 import { masteryLevel } from '../lib/srs'
 import { MASTERY_COLORS, MASTERY_LABELS } from '../components/ui'
-import { speak, ttsSupported } from '../lib/browser'
+import { audioSupported, playWord } from '../lib/browser'
 import type { Word } from '../types'
 
 const PAGE = 100
@@ -150,8 +150,8 @@ export function WordsPage() {
                       ))}
                     </div>
                   </div>
-                  {ttsSupported() && (
-                    <button className="btn-ghost hidden px-2 sm:inline-flex" onClick={() => speak(w.reading)} aria-label="發音">
+                  {audioSupported() && (
+                    <button className="btn-ghost hidden px-2 sm:inline-flex" onClick={() => playWord(w)} aria-label="發音">
                       🔊
                     </button>
                   )}

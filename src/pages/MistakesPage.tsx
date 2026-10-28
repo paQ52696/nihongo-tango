@@ -6,7 +6,7 @@ import { BarList } from '../components/charts'
 import { ERROR_LABELS } from '../lib/errorTypes'
 import { MISTAKE_CLEAR_STREAK } from '../lib/stats'
 import type { ErrorType } from '../types'
-import { speak, ttsSupported } from '../lib/browser'
+import { audioSupported, playWord } from '../lib/browser'
 
 export function MistakesPage() {
   const data = useAppData()
@@ -78,8 +78,8 @@ export function MistakesPage() {
                       <span className="jp text-2xl font-bold">{w.kanji || w.reading}</span>
                       <span className="jp text-lg text-emerald-700 dark:text-emerald-300">{w.reading}</span>
                       <span className="text-sm">{w.meaning}</span>
-                      {ttsSupported() && (
-                        <button className="btn-ghost px-1.5 py-0" aria-label="發音" onClick={() => speak(w.reading)}>
+                      {audioSupported() && (
+                        <button className="btn-ghost px-1.5 py-0" aria-label="發音" onClick={() => playWord(w)}>
                           🔊
                         </button>
                       )}

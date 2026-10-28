@@ -36,7 +36,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        // audio/：VOICEVOX 單字音檔（約 3 KB × 數百個），一起快取讓離線也能發音
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}', 'audio/*.{mp3,json}'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
