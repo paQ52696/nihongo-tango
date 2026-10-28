@@ -18,6 +18,9 @@ function mockUrl(): string | null {
 }
 
 async function createBackend(): Promise<SyncBackend | null> {
+  // E2E 建置會明確指定模擬雲端：優先使用，不要連到 .env 裡真的 Supabase
+  const mockEnv = import.meta.env.VITE_MOCK_SYNC_URL as string | undefined
+  if (mockEnv) return new MockBackend({ url: mockEnv })
   // 容錯：Supabase 後台也會顯示「…supabase.co/rest/v1/」，誤貼時去掉 API 路徑與結尾斜線
   const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim().replace(/\/(rest|auth)\/v1\/?$/, '').replace(/\/+$/, '')
   const key = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim()

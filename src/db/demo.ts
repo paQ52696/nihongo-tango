@@ -1,6 +1,7 @@
 // 內建示範單字庫（約 30 筆）：刻意收錄長音、促音、濁音、拗音、同形異音等容易混淆的字
 import { db, getMeta, setMeta } from './schema'
-import { createDeck, importDrafts } from './repo'
+import { createDeck, deleteDeck, importDrafts, notifyChange, stamp } from './repo'
+import type { Word } from '../types'
 import { checkDuplicates, type WordDraft } from '../lib/importer'
 
 export const DEMO_DECK_ID = '00000000-0000-4000-8000-00000000d3c0'
@@ -58,7 +59,33 @@ export function demoDrafts(): WordDraft[] {
   }))
 }
 
-/** 第一次開啟 App 時建立示範單字庫（只建一次；刪掉後不會再自動出現） */
+/**
+ * 舊版每台裝置第一次開啟都會自動建立示範單字庫；現在不再建立，
+ * 並在每台裝置第一次開新版時刪掉一次（軟刪除，會同步到其他裝置）。
+ * 只屬於示範庫的單字一起刪；也在其他單字庫裡的（例如 N5 的「勉強」）保留。
+ */
+export async function removeLegacyDemoOnce(): Promise<boolean> {
+  if (await getMeta('demoRemoved', false)) return false
+  const deck = await db.decks.get(DEMO_DECK_ID)
+  let removed = false
+  if (deck && !deck.deleted) {
+    const entries = await db.deckEntries.where('deckId').equals(DEMO_DECK_ID).toArray()
+    await deleteDeck(DEMO_DECK_ID)
+    await db.transaction('rw', db.words, db.deckEntries, async () => {
+      for (const e of entries) {
+        const elsewhere = await db.deckEntries.where('wordId').equals(e.wordId).filter((x) => x.deckId !== DEMO_DECK_ID && !x.deleted).count()
+        const w = await db.words.get(e.wordId)
+        if (!elsewhere && w && !w.deleted) await db.words.put(stamp<Word>({ ...w, deleted: true }))
+      }
+    })
+    notifyChange()
+    removed = true
+  }
+  await setMeta('demoRemoved', true)
+  return removed
+}
+
+/** 建立示範單字庫（只建一次）。App 不再自動呼叫，只給測試用 */
 export async function seedDemoIfEmpty(): Promise<boolean> {
   // 整個建立過程在同一個交易裡：中途關掉分頁也不會留下沒有單字的空庫
   return db.transaction('rw', [db.meta, db.decks, db.words, db.deckEntries, db.cards], async () => {

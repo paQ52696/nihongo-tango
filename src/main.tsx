@@ -13,7 +13,7 @@ import { StatsPage } from './pages/StatsPage'
 import { WordsPage } from './pages/WordsPage'
 import { ImportPage } from './pages/ImportPage'
 import { SettingsPage } from './pages/SettingsPage'
-import { seedDemoIfEmpty } from './db/demo'
+import { removeLegacyDemoOnce, seedDemoIfEmpty } from './db/demo'
 import { startSync } from './sync'
 import { applyTheme, loadAudioManifest } from './lib/browser'
 import { db } from './db/schema'
@@ -21,7 +21,7 @@ import { exportAll } from './db/backup'
 import { getEngine } from './sync'
 
 // 開發／E2E 測試用的除錯掛勾
-if (import.meta.env.DEV || import.meta.env.VITE_E2E) (window as any).__app = { db, exportAll, getEngine }
+if (import.meta.env.DEV || import.meta.env.VITE_E2E) (window as any).__app = { db, exportAll, getEngine, seedDemoIfEmpty, ready: null as Promise<unknown> | null }
 
 applyTheme()
 loadAudioManifest()
@@ -29,9 +29,10 @@ window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change',
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) registerSW({ immediate: true })
 
-seedDemoIfEmpty()
-  .catch((e) => console.error('建立示範資料失敗', e))
+const ready = removeLegacyDemoOnce()
+  .catch((e) => console.error('刪除示範單字庫失敗', e))
   .finally(() => startSync().catch((e) => console.error('同步啟動失敗', e)))
+if ((window as any).__app) (window as any).__app.ready = ready
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

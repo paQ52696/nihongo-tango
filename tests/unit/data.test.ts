@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import { AppDB, setDb, db } from '../../src/db/schema'
 import { createDeck, importDrafts, recordAnswer, deleteDeck, batchTags, copyWordsToDeck, removeFromDeck, updateSettings, getSettings, cardIdFor, loadAll } from '../../src/db/repo'
 import { exportAll, restoreAll, wipeAll } from '../../src/db/backup'
-import { seedDemoIfEmpty, DEMO_DECK_ID } from '../../src/db/demo'
+import { seedDemoIfEmpty, removeLegacyDemoOnce, DEMO_DECK_ID } from '../../src/db/demo'
 import { parseCsv, parseXlsx, parseJson, parseFile, guessMapping, rowsToDrafts, checkDuplicates, decodeText, deckToCsv, deckToJson } from '../../src/lib/importer'
 import { computeMistakes } from '../../src/lib/stats'
 
@@ -162,6 +162,19 @@ describe('單字庫與進度', () => {
     expect(all.decks.map((d) => d.id)).toEqual([DEMO_DECK_ID])
     expect(all.words.length).toBeGreaterThanOrEqual(30)
     expect(all.cards.length).toBe(all.words.length)
+  })
+  it('舊版的示範單字庫在新版開啟時刪掉一次；其他單字庫也有的字保留', async () => {
+    await seedDemoIfEmpty()
+    const mine = await createDeck({ name: 'N5' })
+    const t = parseCsv('漢字,讀音,中文\n学校,がっこう,學校\n勉強,べんきょう,讀書\n')
+    await importDrafts(mine.id, checkDuplicates(rowsToDrafts(t, guessMapping(t.headers)), (await loadAll()).words, [], mine.id))
+    expect(await removeLegacyDemoOnce()).toBe(true)
+    const all = await loadAll()
+    expect(all.decks.map((d) => d.name)).toEqual(['N5'])
+    expect(all.words.map((w) => w.kanji).sort()).toEqual(['勉強', '学校'].sort()) // 只屬於示範庫的字一起刪
+    expect((await db.decks.get(DEMO_DECK_ID))!._dirty).toBe(1) // 刪除會同步到其他裝置
+    // 只做一次：之後就算又出現示範庫（例如從還沒更新的裝置同步過來）也不會在這台重刪
+    expect(await removeLegacyDemoOnce()).toBe(false)
   })
   it('匯出單字庫 CSV／JSON 可以再匯入', async () => {
     await seedDemoIfEmpty()

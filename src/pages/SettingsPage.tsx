@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { useSettings } from '../hooks/useData'
 import { updateSettings } from '../db/repo'
 import { exportAll, restoreAll, wipeAll } from '../db/backup'
-import { seedDemoIfEmpty } from '../db/demo'
-import { setMeta } from '../db/schema'
 import { ConfirmButton, PageTitle, Segmented, Toggle } from '../components/ui'
 import { AccountPanel } from '../components/Layout'
 import { canPromptInstall, downloadText, getTheme, audioCreditText, audioSupported, canSpeakJapanese, hasAudioFiles, hasJapaneseVoice, isIOS, isSafari, isStandalone, onInstallAvailable, onVoicesChanged, playWord, promptInstall, setTheme, type Theme } from '../lib/browser'
@@ -187,16 +185,6 @@ export function SettingsPage() {
           >
             清空所有資料
           </ConfirmButton>
-          <button
-            className="btn-ghost"
-            onClick={async () => {
-              await setMeta('demoSeeded', false)
-              const ok = await seedDemoIfEmpty()
-              setMsg(ok ? '已重新建立示範單字庫' : '已有單字庫，未建立示範資料')
-            }}
-          >
-            重新建立示範單字庫
-          </button>
         </div>
       </section>
 

@@ -9,6 +9,12 @@ export const N5_FILE = existsSync(path.join(ROOT, 'data/out/n5.json')) ? path.jo
 
 export async function openApp(page: Page, hash = '/') {
   await page.goto('/#' + hash)
+  // App 不再自動建立示範單字庫；測試用它當起始資料（等啟動清理跑完再建，避免被刪）
+  await page.waitForFunction(() => (window as any).__app?.ready)
+  await page.evaluate(async () => {
+    await (window as any).__app.ready
+    await (window as any).__app.seedDemoIfEmpty()
+  })
   await expect(page.getByTestId('deck-card').first()).toBeVisible()
 }
 
