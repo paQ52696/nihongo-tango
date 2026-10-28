@@ -18,8 +18,9 @@ function mockUrl(): string | null {
 }
 
 async function createBackend(): Promise<SyncBackend | null> {
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+  // 容錯：Supabase 後台也會顯示「…supabase.co/rest/v1/」，誤貼時去掉 API 路徑與結尾斜線
+  const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim().replace(/\/(rest|auth)\/v1\/?$/, '').replace(/\/+$/, '')
+  const key = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim()
   if (url && key && !url.includes('xxxxxxxx')) {
     const { SupabaseBackend } = await import('./supabase')
     return new SupabaseBackend(url, key)
