@@ -28,9 +28,11 @@ Git：6 個 commit，在 `main` 分支，**還沒 push**（也沒有設定 remot
 
 ## 2. 需要你回答的問題（括號內是我先用的預設）
 
-1. **期中考單字庫在哪？** 專案的 `data/` 原本是空的。我在你的「下載」資料夾找到 `N5單字表總整理學生版(new)pdf版 (1).pdf`，**複製**（沒有移動）到 `data/n5.pdf`；但找不到期中考的檔案。
+> **2026-10-28 你的回覆**：問題 1 → 目前還沒有期中考檔案，之後自行匯入。問題 2 → 頁碼就是 PDF 的頁數（PDF 上沒有另外印頁碼），維持 p.1–16，不需要 `--page-offset`。其餘維持預設。
+
+1. ✅（已回覆）**期中考單字庫在哪？** 專案的 `data/` 原本是空的。我在你的「下載」資料夾找到 `N5單字表總整理學生版(new)pdf版 (1).pdf`，**複製**（沒有移動）到 `data/n5.pdf`；但找不到期中考的檔案。
    → 預設：寫了通用的 `scripts/convert_doc.py`（Word／PDF → CSV，會自動抓「第3課」當課次），CSV／Excel 可直接在 App 匯入。把檔案放進 `data/` 告訴我格式，我再針對它調整。
-2. **「p.12–15」是 PDF 的第幾頁，還是紙本上印的頁碼？**（預設：PDF 頁數 1–16，PDF 上沒有印頁碼）
+2. ✅（已回覆）**「p.12–15」是 PDF 的第幾頁，還是紙本上印的頁碼？**（預設：PDF 頁數 1–16，PDF 上沒有印頁碼）
    → 要改：`python scripts/import_pdf.py data/n5.pdf -o data/out/n5.json --page-offset 11`（PDF 第 1 頁 = p.12）
 3. **詞性**：PDF 沒有詞性欄，我用規則推測（`(自V)`→動詞、`（な）`→な形容詞、送假名…），535 筆中 531 筆是推測的；只寫假名的動詞（例如「なる」）會被判成名詞。（預設：照推測匯入，報告在 `data/out/n5.report.md`）
    → 要改：`scripts/import_pdf.py` 的 `guess_pos()`，或在 App 單字頁手動改。
@@ -55,7 +57,7 @@ Git：6 個 commit，在 `main` 分支，**還沒 push**（也沒有設定 remot
 > 詳細圖文步驟在 README 第 6、7 節。
 
 **待你處理**
-1. **把這個專案移到你想放的資料夾**（目前在 Claude App 為這個工作階段建立的暫存資料夾）。
+1. ✅ ~~把這個專案移到你想放的資料夾~~：已移到 `C:\Users\Me\Downloads\JP APP`
 2. **建立 Supabase 專案**：supabase.com → New project（Region 選 Tokyo）
 3. **建表**：SQL Editor → 貼上 `supabase/schema.sql` → Run
 4. **填金鑰**：複製 `.env.example` 為 `.env`，填 `VITE_SUPABASE_URL` 與 `VITE_SUPABASE_ANON_KEY`（Project Settings → API）
