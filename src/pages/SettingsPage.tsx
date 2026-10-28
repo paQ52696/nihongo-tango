@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Check, Download, Upload } from 'lucide-react'
+import { Check, Download, RotateCcw, Upload } from 'lucide-react'
+import { useSync } from '../sync'
 import { SpeakButton } from '../components/SpeakButton'
 
 const TRY_WORD = { kanji: '勉強', reading: 'べんきょう' }
@@ -12,6 +13,7 @@ import { canPromptInstall, downloadText, getTheme, audioCreditText, audioSupport
 import { dateKey } from '../lib/dates'
 
 export function SettingsPage() {
+  const signedIn = !!useSync().user
   const s = useSettings()
   const [theme, setThemeState] = useState<Theme>(getTheme())
   const [pendingRestore, setPendingRestore] = useState<{ name: string; data: unknown; counts: string } | null>(null)
@@ -182,17 +184,25 @@ export function SettingsPage() {
       </section>
 
       <section className="card space-y-3 p-5">
-        <h2 className="font-bold text-accent">危險區域</h2>
+        <h2 className="font-bold">重設這台裝置</h2>
+        <p className="text-sm text-muted">
+          清空<strong className="text-ink">這台裝置</strong>上的單字庫、進度和作答紀錄。
+          {signedIn
+            ? '雲端的資料會保留，下次同步時會整份重新下載回來，其他裝置也不受影響。適合在借用的電腦用完後清掉，或這台的資料出問題時重新從雲端抓。'
+            : '你目前沒有登入同步，資料只存在這台裝置，清空後就救不回來，請先「匯出備份」。'}
+        </p>
         <div className="flex flex-wrap gap-2">
           <ConfirmButton
-            confirmText="清空這台裝置上的所有資料？（建議先匯出備份）"
+            className="btn-secondary"
+            confirmText={signedIn ? '清空這台裝置的資料？雲端資料會保留。' : '清空這台裝置的資料？沒有備份的話會永久消失。'}
             confirmLabel="清空"
             onConfirm={async () => {
               await wipeAll()
-              setMsg('已清空所有資料')
+              setMsg('已清空這台裝置的資料')
             }}
           >
-            清空所有資料
+            <RotateCcw size={16} aria-hidden />
+            清空這台裝置的資料
           </ConfirmButton>
         </div>
       </section>

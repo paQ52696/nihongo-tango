@@ -127,9 +127,9 @@ test('備份 → 清空 → 還原，資料與進度完全一致', async ({ page
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('backup-export').click()])
   const file = await download.path()
 
-  await page.getByRole('button', { name: '清空所有資料' }).click()
+  await page.getByRole('button', { name: '清空這台裝置的資料' }).click()
   await page.getByRole('button', { name: '清空', exact: true }).click()
-  await expect(page.getByTestId('settings-msg')).toHaveText('已清空所有資料')
+  await expect(page.getByTestId('settings-msg')).toHaveText('已清空這台裝置的資料')
   expect(await evalDb<number>(page, 'return await db.words.count()')).toBe(0)
 
   await page.getByTestId('backup-file').setInputFiles(file!)
