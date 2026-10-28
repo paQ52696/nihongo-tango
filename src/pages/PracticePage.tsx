@@ -171,8 +171,10 @@ export function PracticePage() {
               )
             })}
           </div>
-          {mode === 'listening' && ttsSupported() && !voiceOk && (
-            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">找不到日文語音，可能會用其他語言的聲音唸。Windows：設定 → 時間與語言 → 語音 → 新增「日文」；Mac／iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音 → 日文。</p>
+          {ttsSupported() && !voiceOk && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300" data-testid="no-ja-voice">
+              這台裝置沒有日文語音，所以不會發音（避免用中文語音唸錯）{mode === 'listening' && '，「聽音選字」也無法使用'}。安裝方式見「設定 → 發音」。
+            </p>
           )}
           {mode === 'listening' && !ttsSupported() && <p className="mt-2 text-xs text-red-600">這個瀏覽器不支援語音合成，請改用其他題型。</p>}
         </fieldset>

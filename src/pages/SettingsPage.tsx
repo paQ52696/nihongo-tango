@@ -50,7 +50,7 @@ export function SettingsPage() {
                 🔊 試聽
               </button>
             </div>
-            {!voiceOk && <p className="text-xs text-amber-700 dark:text-amber-300">找不到日文語音。Windows：設定 → 時間與語言 → 語音 → 新增語音「日本語」；Mac：系統設定 → 輔助使用 → 朗讀內容 → 系統聲音 → 管理聲音 → 日文；iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音 → 日文。</p>}
+            {!voiceOk && <p className="text-xs text-amber-700 dark:text-amber-300">找不到日文語音，目前不會發音。Windows：設定 → 時間與語言 → 語音 → 管理語音「新增語音」→ 選「日本語」，裝好後把瀏覽器完全關掉再打開；Mac：系統設定 → 輔助使用 → 朗讀內容 → 系統聲音 → 管理聲音 → 日文；iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音 → 日文。</p>}
             {isSafari() && <p className="text-xs text-ink-600 dark:text-lav-300">Safari 第一次播放需要你先點一下播放按鈕，之後才會自動唸。</p>}
           </>
         )}

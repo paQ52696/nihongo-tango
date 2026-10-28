@@ -25,24 +25,42 @@ export function onVoicesChanged(fn: () => void) {
 }
 
 export function japaneseVoice(): SpeechSynthesisVoice | undefined {
-  return voices.find((v) => v.lang === 'ja-JP' && /Kyoko|Otoya|Google|Nanami|Haruka/i.test(v.name)) ?? voices.find((v) => v.lang.replace('_', '-').startsWith('ja'))
+  const ja = voices.filter((v) => v.lang.replace('_', '-').toLowerCase().startsWith('ja'))
+  // 離線時線上語音（Google、Edge 的 Natural）唸不出來，改用裝置內建的
+  const usable = typeof navigator !== 'undefined' && navigator.onLine === false && ja.some((v) => v.localService) ? ja.filter((v) => v.localService) : ja
+  return usable.find((v) => /Kyoko|Otoya|Google|Nanami|Haruka|Ayumi|Ichiro|Sayaka/i.test(v.name)) ?? usable[0]
 }
 
 export function hasJapaneseVoice(): boolean {
   return !!japaneseVoice()
 }
 
+// Chrome 會在唸完前把 utterance 回收掉而中斷，留一個參照
+let current: SpeechSynthesisUtterance | null = null
+
 /** 唸出日文。Safari 第一次必須由使用者點擊觸發，之後就能自動播放。 */
 export function speak(text: string, rate = 0.9): boolean {
   if (!ttsSupported() || !text) return false
+  const v = japaneseVoice()
+  // 語音清單已載入卻沒有日文：不要讓系統用中文／英文語音唸（漢字會唸成中文）
+  if (!v && voices.length > 0) return false
   const synth = window.speechSynthesis
-  synth.cancel()
   const u = new SpeechSynthesisUtterance(text)
   u.lang = 'ja-JP'
-  const v = japaneseVoice()
   if (v) u.voice = v
   u.rate = rate
-  synth.speak(u)
+  current = u
+  u.onend = u.onerror = () => {
+    if (current === u) current = null
+  }
+  if (synth.speaking || synth.pending) {
+    // Windows Chrome：cancel() 後立刻 speak() 常常沒聲音，稍等一下再唸
+    synth.cancel()
+    setTimeout(() => current === u && synth.speak(u), 80)
+  } else {
+    synth.resume() // Chrome 偶爾卡在暫停狀態
+    synth.speak(u)
+  }
   return true
 }
 

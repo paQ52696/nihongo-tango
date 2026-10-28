@@ -65,5 +65,5 @@ describe.skipIf(!existsSync(N5))('真實資料：N5 PDF 轉出的 JSON', () => {
     const traps = (kinds.long_vowel ?? 0) + (kinds.sokuon ?? 0) + (kinds.dakuten ?? 0) + (kinds.youon ?? 0) + (kinds.alt_reading ?? 0)
     const total = Object.values(kinds).reduce((a, b) => a + b, 0)
     expect(traps / total).toBeGreaterThan(0.8) // 絕大多數干擾選項來自 N5 陷阱
-  })
+  }, 30_000) // 匯入 535 筆在較慢的機器上會超過預設 5 秒
 })
