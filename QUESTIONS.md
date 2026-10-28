@@ -63,15 +63,11 @@ Git：6 個 commit，在 `main` 分支，**還沒 push**（也沒有設定 remot
 4. ✅ ~~填金鑰~~：`.env` 已填好（publishable key），確認不會進 git，打包後也確實切換成 Supabase 同步
 5. **設定登入導回網址**：Authentication → URL Configuration → Redirect URLs 加 `http://localhost:5173/`（部署後再加 GitHub Pages 網址）
 6. **本機試登入**：`npm run dev` → 右上角「未登入」→ 輸入 Email → 用同一個瀏覽器開信中連結
-7. **建立 GitHub repo**（例如 `nihongo-tango`）
-8. **push**：
-   ```bash
-   git remote add origin https://github.com/<帳號>/nihongo-tango.git
-   git push -u origin main
-   ```
+7. ✅ ~~建立 GitHub repo~~：<https://github.com/paQ52696/nihongo-tango>
+8. ✅ ~~push~~：已推上 `main`（之後的 commit 由 Claude 推）
 9. **開 Pages**：repo → Settings → Pages → Source 選「GitHub Actions」
 10. **加 Secrets**：Settings → Secrets and variables → Actions → 新增 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY` → 到 Actions 頁重跑一次 workflow
-11. **把 `https://<帳號>.github.io/nihongo-tango/` 加進 Supabase 的 Site URL／Redirect URLs**
+11. **把 `https://paq52696.github.io/nihongo-tango/` 加進 Supabase 的 Site URL／Redirect URLs**
 12. **在每台裝置**開網站 → 安裝成 App（README 第 8 節）→ 登入同一個 Email → 到「匯入」頁匯入 `data/out/n5.json`（只要在一台匯入，其他台同步就有）
 13. （選用）Google 登入：Supabase → Authentication → Providers → Google
 
