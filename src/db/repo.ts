@@ -243,6 +243,7 @@ export async function importDrafts(deckId: string, checks: DraftCheck[], decisio
         example: d.example,
         exampleTranslation: d.exampleTranslation,
         note: d.note ?? '',
+        ...d.extra,
       }
       let wordId: string
       const choice = typeof decision === 'function' ? decision(c) : decision

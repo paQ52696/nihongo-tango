@@ -5,14 +5,27 @@ import { ScopePicker, parseScope, type ScopeValue } from '../components/ScopePic
 import { PracticeRunner, type AnswerRecord } from '../components/PracticeRunner'
 import { Empty, PageTitle, Segmented, Toggle } from '../components/ui'
 import { selectCards } from '../lib/session'
-import { buildQuestion, canAsk, MODE_LABELS, type Question } from '../lib/questions'
+import { buildQuestion, canAsk, MODE_GROUPS, MODE_LABELS, type Question } from '../lib/questions'
 import { buildKanjiDict, makeRng, shuffle } from '../lib/distractors'
 import { ERROR_LABELS } from '../lib/errorTypes'
 import { audioSupported, canSpeakJapanese, onVoicesChanged } from '../lib/browser'
 import { DEFAULT_SETTINGS } from '../db/repo'
 import type { Card, QuestionMode, Settings } from '../types'
 
-const MODES: QuestionMode[] = ['kanji2reading', 'reading2kanji', 'kanji2meaning', 'typing', 'listening', 'cloze']
+const MODES: QuestionMode[] = MODE_GROUPS.flatMap((g) => g.modes)
+
+/** 每種題型沒有可出的題目時的說明 */
+const NEED: Partial<Record<QuestionMode, string>> = {
+  kanji2reading: '（需要有漢字的單字）',
+  reading2kanji: '（需要有漢字的單字）',
+  cloze: '（需要有例句的單字）',
+  conjugate: '（需要詞性是「動詞」的單字）',
+  ja2zh: '（需要先匯入課文句子）',
+  zh2ja: '（需要先匯入課文句子）',
+  reorder: '（需要先匯入有分文節的課文句子）',
+  particle: '（需要先匯入有分文節的課文句子）',
+  grammar: '（到「匯入」頁加入內建文法題庫）',
+}
 
 function selectFor(data: AppData, v: ScopeValue, mode: QuestionMode, count: number, rng: () => number, onlyCards?: Set<string>) {
   const cards = data.cards.filter((c) => v.deckIds.includes(c.deckId) && (!onlyCards || onlyCards.has(c.id)))
@@ -40,8 +53,30 @@ export function countEligible(data: AppData, v: ScopeValue, mode: QuestionMode):
 export function buildQuestions(data: AppData, v: ScopeValue, mode: QuestionMode, count: number, opts: { seed?: number; onlyCards?: Set<string>; random?: boolean } = {}): Question[] {
   const rng = makeRng(opts.seed ?? Date.now())
   const selected = opts.random ? shuffle(selectFor(data, v, mode, 100000, rng, opts.onlyCards), rng).slice(0, count) : selectFor(data, v, mode, count, rng, opts.onlyCards)
-  const dict = buildKanjiDict(data.words)
-  return selected.map((c) => buildQuestion(mode, c, data.wordById.get(c.wordId)!, data.words, rng, dict))
+  // 干擾選項與讀音字典只用單字（不含課文句子、文法點）
+  const vocab = data.words.filter((w) => !w.kind)
+  const dict = buildKanjiDict(vocab)
+  const context = sentenceContext(data, v.deckIds)
+  return selected.map((c) => buildQuestion(mode, c, data.wordById.get(c.wordId)!, vocab, rng, dict, { context: context.get(c.deckId + '|' + c.wordId) }))
+}
+
+/** 課文句子的上一句（同一個單字庫、同一課，依匯入順序），中翻日／日翻中時當作對話提示 */
+function sentenceContext(data: AppData, deckIds: string[]): Map<string, string> {
+  const out = new Map<string, string>()
+  const groups = new Map<string, { order: number; wordId: string; deckId: string }[]>()
+  for (const e of data.entries) {
+    if (e.deleted || !deckIds.includes(e.deckId) || data.wordById.get(e.wordId)?.kind !== 'sentence') continue
+    const key = e.deckId + '|' + (e.lesson ?? '')
+    groups.set(key, [...(groups.get(key) ?? []), e])
+  }
+  for (const list of groups.values()) {
+    list.sort((a, b) => a.order - b.order)
+    list.forEach((e, i) => {
+      const prev = i > 0 ? data.wordById.get(list[i - 1].wordId) : undefined
+      if (prev) out.set(e.deckId + '|' + e.wordId, (prev.speaker ? prev.speaker + '：' : '') + prev.kanji)
+    })
+  }
+  return out
 }
 
 export function PracticePage() {
@@ -66,10 +101,12 @@ export function PracticePage() {
     if (data && scope && params.get('autostart') === '1' && !questions && !result) start()
   }, [data, scope]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const eligibleCount = useMemo(() => {
-    if (!data || !scope) return 0
-    return countEligible(data, scope, mode)
-  }, [data, scope, mode])
+  // 每種題型在目前範圍能出幾題（沒有的題型會變灰）
+  const counts = useMemo(() => {
+    if (!data || !scope) return null
+    return new Map(MODES.map((m) => [m, countEligible(data, scope, m)]))
+  }, [data, scope])
+  const eligibleCount = counts?.get(mode) ?? 0
 
   if (!data || !scope) return null
   const s: Settings = settings ?? ({ ...DEFAULT_SETTINGS, updated_at: '' } as Settings)
@@ -153,23 +190,33 @@ export function PracticePage() {
         <ScopePicker value={scope} onChange={setScope} data={data} />
         <fieldset>
           <legend className="label">③ 題型</legend>
-          <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="題型">
-            {MODES.map((m) => {
-              const disabled = m === 'listening' && !audioSupported()
-              return (
-                <button
-                  key={m}
-                  role="radio"
-                  aria-checked={mode === m}
-                  disabled={disabled}
-                  onClick={() => setMode(m)}
-                  className={`rounded-xl border-2 px-3 py-2 text-left text-sm transition-colors disabled:opacity-40 ${mode === m ? 'border-sakura-400 bg-sakura-50 font-semibold dark:bg-ink-700' : 'border-sakura-100 hover:border-lav-300 dark:border-ink-600'}`}
-                >
-                  {MODE_LABELS[m]}
-                  {m === 'kanji2reading' && <span className="ml-1 rounded bg-sakura-200 px-1 text-[10px] text-sakura-800">考試題型</span>}
-                </button>
-              )
-            })}
+          <div className="space-y-3" role="radiogroup" aria-label="題型">
+            {MODE_GROUPS.map((g) => (
+              <div key={g.title}>
+                <p className="mb-1 text-xs font-semibold text-ink-600 dark:text-lav-300">{g.title}</p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {g.modes.map((m) => {
+                    const disabled = m === 'listening' && !audioSupported()
+                    const n = counts?.get(m) ?? 0
+                    return (
+                      <button
+                        key={m}
+                        role="radio"
+                        aria-checked={mode === m}
+                        disabled={disabled}
+                        onClick={() => setMode(m)}
+                        data-testid={'mode-' + m}
+                        className={`rounded-xl border-2 px-3 py-2 text-left text-sm transition-colors disabled:opacity-40 ${mode === m ? 'border-sakura-400 bg-sakura-50 font-semibold dark:bg-ink-700' : 'border-sakura-100 hover:border-lav-300 dark:border-ink-600'} ${n === 0 && mode !== m ? 'opacity-50' : ''}`}
+                      >
+                        {MODE_LABELS[m]}
+                        {m === 'kanji2reading' && <span className="ml-1 rounded bg-sakura-200 px-1 text-[10px] text-sakura-800">考試題型</span>}
+                        <span className="ml-1 text-xs font-normal text-ink-600 dark:text-lav-300">{n}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
           {audioSupported() && !voiceOk && (
             <p className="mt-2 text-xs text-amber-700 dark:text-amber-300" data-testid="no-ja-voice">
@@ -202,7 +249,7 @@ export function PracticePage() {
         </div>
         {eligibleCount === 0 && scope.deckIds.length > 0 && (
           <p className="text-sm text-amber-700 dark:text-amber-300">
-            這個範圍沒有可以出「{MODE_LABELS[mode]}」的單字{mode === 'cloze' ? '（需要有例句）' : mode === 'kanji2reading' || mode === 'reading2kanji' ? '（需要有漢字）' : ''}。
+            這個範圍沒有可以出「{MODE_LABELS[mode]}」的題目{NEED[mode] ?? ''}。
             {scope.scope.kind === 'due' && ' 今天的複習都完成了！'}
             <button className="ml-1 underline" onClick={() => setScope({ ...scope, scope: { kind: 'all' } })}>
               改成全部

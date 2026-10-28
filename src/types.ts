@@ -16,7 +16,19 @@ export interface Word extends SyncFields {
   tags: string[]
   favorite: boolean
   note?: string
+  /** 沒有值＝單字；sentence＝課文句子；grammar＝文法點（存在 data jsonb，同步不需要改資料表） */
+  kind?: WordKind
+  /** 課文句子：文節切分（語順重組、助詞填空用），合起來等於 kanji */
+  chunks?: string[]
+  /** 課文句子：每個文節的假名讀音（中翻日接受假名作答） */
+  chunkReadings?: string[]
+  /** 課文句子：說話者（對話中的角色） */
+  speaker?: string
+  /** 文法點：對應內建題庫的 id */
+  grammarId?: string
 }
+
+export type WordKind = 'sentence' | 'grammar'
 
 export interface Deck extends SyncFields {
   name: string
@@ -53,7 +65,22 @@ export interface Card extends SyncFields {
 
 export type Rating = 1 | 2 | 3 | 4 // 重來 困難 良好 簡單
 
-export type QuestionMode = 'kanji2reading' | 'reading2kanji' | 'kanji2meaning' | 'typing' | 'listening' | 'cloze'
+export type QuestionMode =
+  // 單字
+  | 'kanji2reading'
+  | 'reading2kanji'
+  | 'kanji2meaning'
+  | 'typing'
+  | 'listening'
+  | 'cloze'
+  | 'conjugate' // 動詞變化（て形、ます形）
+  // 課文句子
+  | 'ja2zh' // 日翻中：看答案後自評
+  | 'zh2ja' // 中翻日：打字，與課本原句比對
+  | 'reorder' // 語順重組
+  | 'particle' // 助詞填空
+  // 文法點
+  | 'grammar'
 
 export type ErrorType =
   | 'long_vowel_missing'
@@ -66,6 +93,11 @@ export type ErrorType =
   | 'alt_reading'
   | 'kanji_confusion'
   | 'meaning'
+  | 'conjugation'
+  | 'particle'
+  | 'word_order'
+  | 'translation'
+  | 'grammar'
   | 'timeout'
   | 'other'
 

@@ -2,11 +2,27 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAppData } from '../hooks/useData'
 import { createDeck, importDrafts, type DupDecision, type ImportResult } from '../db/repo'
-import { PageTitle } from '../components/ui'
-import { FIELDS, FIELD_LABELS, checkDuplicates, guessMapping, parseFile, rowsToDrafts, type DupStatus, type Mapping, type ParsedTable } from '../lib/importer'
+import { PageTitle, Segmented } from '../components/ui'
+import {
+  FIELDS,
+  FIELD_LABELS,
+  SENTENCE_FIELDS,
+  SENTENCE_FIELD_LABELS,
+  checkDuplicates,
+  guessKind,
+  guessMapping,
+  parseFile,
+  rowsToDrafts,
+  type DupStatus,
+  type ImportKind,
+  type Mapping,
+  type ParsedTable,
+} from '../lib/importer'
+import { GRAMMAR_SETS } from '../data/grammar'
+import { addGrammarSet } from '../db/grammar'
 
 const STATUS_LABEL: Record<DupStatus, { text: string; cls: string }> = {
-  new: { text: '新單字', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' },
+  new: { text: '新增', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' },
   existing: { text: '已存在', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200' },
   inDeck: { text: '已在此庫', cls: 'bg-lav-100 text-lav-800 dark:bg-ink-600 dark:text-lav-100' },
   dupInFile: { text: '檔案內重複', cls: 'bg-lav-100 text-lav-800 dark:bg-ink-600 dark:text-lav-100' },
@@ -25,12 +41,18 @@ export function ImportPage() {
   const [decision, setDecision] = useState<DupDecision>('merge')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<(ImportResult & { deckId: string }) | null>(null)
+  const [kind, setKind] = useState<ImportKind>('word')
+  const [grammarMsg, setGrammarMsg] = useState<{ deckId: string; text: string } | null>(null)
 
   const deckId = target === '__new' ? null : target
   const checks = useMemo(() => {
     if (!table || !mapping || !data) return null
-    return checkDuplicates(rowsToDrafts(table, mapping), data.words, data.entries, deckId)
-  }, [table, mapping, data, deckId])
+    return checkDuplicates(rowsToDrafts(table, mapping, kind), data.words, data.entries, deckId)
+  }, [table, mapping, data, deckId, kind])
+  const unit = kind === 'sentence' ? '句' : '個單字'
+  const fields = kind === 'sentence' ? SENTENCE_FIELDS : FIELDS
+  const required: string[] = kind === 'sentence' ? ['kanji', 'meaning'] : ['reading', 'meaning']
+  const missingRequired = mapping ? (kind === 'sentence' ? mapping.kanji < 0 : mapping.reading < 0) : true
 
   if (!data) return null
 
@@ -43,6 +65,7 @@ export function ImportPage() {
       if (!t.rows.length) throw new Error('檔案裡沒有資料列')
       setTable(t)
       setMapping(guessMapping(t.headers))
+      setKind(guessKind(t))
       setFileName(f.name)
       setNewName(f.name.replace(/\.[^.]+$/, ''))
     } catch (e) {
@@ -74,7 +97,7 @@ export function ImportPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      <PageTitle>匯入單字</PageTitle>
+      <PageTitle>匯入單字／課文</PageTitle>
 
       {result && (
         <div className="card anim-in border-emerald-300 bg-emerald-50 p-4 dark:bg-emerald-950/40" data-testid="import-result" role="status">
@@ -117,6 +140,38 @@ export function ImportPage() {
         )}
       </section>
 
+      <section className="card space-y-3 p-5">
+        <h2 className="font-bold">📘 內建文法題庫</h2>
+        <p className="text-sm text-ink-600 dark:text-lav-300">
+          每個文法點有說明、例句，以及 N5 形式的（　）選擇題與 ★ 排序題。加入後在「練習 → 文法題」練習；重複加入只會補上新增的文法點，進度不受影響。
+        </p>
+        {GRAMMAR_SETS.map((s) => (
+          <div key={s.id} className="flex flex-wrap items-center justify-between gap-2">
+            <span>
+              {s.name}（{s.points.length} 個文法點、{s.points.reduce((n, p) => n + p.questions.length, 0)} 題）
+            </span>
+            <button
+              className="btn-secondary"
+              data-testid={'add-grammar-' + s.id}
+              onClick={async () => {
+                const r = await addGrammarSet(s.id)
+                setGrammarMsg({ deckId: r.deckId, text: r.added ? `已加入 ${r.added} 個文法點` : '已經加入過了，沒有新的文法點' })
+              }}
+            >
+              加入
+            </button>
+          </div>
+        ))}
+        {grammarMsg && (
+          <p className="text-sm" role="status" data-testid="grammar-msg">
+            {grammarMsg.text}・
+            <Link className="underline" to={`/practice?decks=${grammarMsg.deckId}&mode=grammar`}>
+              去練文法題
+            </Link>
+          </p>
+        )}
+      </section>
+
       {table && mapping && checks && counts && (
         <>
           <section className="card space-y-3 p-5">
@@ -133,14 +188,27 @@ export function ImportPage() {
           </section>
 
           <section className="card space-y-3 p-5">
-            <h2 className="font-bold">③ 欄位對應</h2>
-            <p className="text-sm text-ink-600 dark:text-lav-300">已依欄位名稱自動猜測，請確認每個項目對應到哪一欄。</p>
+            <h2 className="font-bold">③ 內容類型與欄位對應</h2>
+            <Segmented
+              label="內容類型"
+              value={kind}
+              onChange={setKind}
+              options={[
+                { value: 'word' as ImportKind, label: '單字' },
+                { value: 'sentence' as ImportKind, label: '課文句子' },
+              ]}
+            />
+            <p className="text-sm text-ink-600 dark:text-lav-300">
+              {kind === 'sentence'
+                ? '課文句子可以練中翻日、日翻中、語順重組、助詞填空。日文用「|」分出文節（例：わたしは|毎朝|6時に|起きます。），才能出重組與助詞題；讀音用同樣的分法，中翻日就能接受假名作答。'
+                : '已依欄位名稱自動猜測，請確認每個項目對應到哪一欄。'}
+            </p>
             <div className="grid gap-3 sm:grid-cols-3">
-              {FIELDS.map((f) => (
+              {fields.map((f) => (
                 <div key={f}>
                   <label className="label" htmlFor={'map-' + f}>
-                    {FIELD_LABELS[f]}
-                    {(f === 'reading' || f === 'meaning') && <span className="text-sakura-600"> *</span>}
+                    {(kind === 'sentence' && SENTENCE_FIELD_LABELS[f]) || FIELD_LABELS[f]}
+                    {required.includes(f) && <span className="text-sakura-600"> *</span>}
                   </label>
                   <select id={'map-' + f} className="input" value={mapping[f]} onChange={(e) => setMapping({ ...mapping, [f]: Number(e.target.value) })} data-testid={'map-' + f}>
                     <option value={-1}>（不使用）</option>
@@ -186,7 +254,9 @@ export function ImportPage() {
             )}
             {problems.length > 0 && (
               <details className="rounded-xl bg-red-50 p-3 text-sm dark:bg-red-950/30">
-                <summary className="cursor-pointer font-medium">{problems.length} 列有欄位缺漏（缺讀音的會略過）</summary>
+                <summary className="cursor-pointer font-medium">
+                  {problems.length} 列有欄位缺漏（缺{kind === 'sentence' ? '日文' : '讀音'}的會略過）
+                </summary>
                 <ul className="mt-2 max-h-40 list-disc overflow-y-auto pl-5">
                   {problems.slice(0, 100).map((c) => (
                     <li key={c.draft.row}>
@@ -201,11 +271,11 @@ export function ImportPage() {
                 <thead className="text-xs text-ink-600 dark:text-lav-300">
                   <tr>
                     <th className="p-1.5">狀態</th>
-                    <th className="p-1.5">漢字</th>
+                    <th className="p-1.5">{kind === 'sentence' ? '日文（／＝文節）' : '漢字'}</th>
                     <th className="p-1.5">讀音</th>
-                    <th className="p-1.5">意思</th>
+                    <th className="p-1.5">{kind === 'sentence' ? '中文' : '意思'}</th>
                     <th className="p-1.5">頁／課</th>
-                    <th className="p-1.5">例句</th>
+                    <th className="p-1.5">{kind === 'sentence' ? '說話者' : '例句'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -214,11 +284,11 @@ export function ImportPage() {
                       <td className="p-1.5">
                         <span className={`whitespace-nowrap rounded-full px-2 text-xs ${STATUS_LABEL[c.status].cls}`}>{STATUS_LABEL[c.status].text}</span>
                       </td>
-                      <td className="jp p-1.5">{c.draft.kanji}</td>
+                      <td className="jp p-1.5">{c.draft.extra?.chunks ? c.draft.extra.chunks.join('／') : c.draft.kanji}</td>
                       <td className="jp p-1.5">{c.draft.reading}</td>
                       <td className="p-1.5">{c.draft.meaning}</td>
                       <td className="p-1.5">{c.draft.page != null ? `p.${c.draft.page}` : c.draft.lesson}</td>
-                      <td className="jp max-w-[14rem] truncate p-1.5">{c.draft.example}</td>
+                      <td className="jp max-w-[14rem] truncate p-1.5">{kind === 'sentence' ? c.draft.extra?.speaker : c.draft.example}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -226,11 +296,11 @@ export function ImportPage() {
               {checks.length > 30 && <p className="mt-1 text-xs text-ink-600 dark:text-lav-300">只顯示前 30 列，共 {checks.length} 列</p>}
             </div>
             <div className="flex justify-end">
-              <button className="btn-primary px-6" disabled={busy || mapping.reading < 0} onClick={doImport} data-testid="do-import">
-                {busy ? '匯入中…' : `匯入 ${checks.length - (counts.invalid ?? 0) - (counts.dupInFile ?? 0)} 個單字`}
+              <button className="btn-primary px-6" disabled={busy || missingRequired} onClick={doImport} data-testid="do-import">
+                {busy ? '匯入中…' : `匯入 ${checks.length - (counts.invalid ?? 0) - (counts.dupInFile ?? 0)} ${unit}`}
               </button>
             </div>
-            {mapping.reading < 0 && <p className="text-right text-sm text-red-600">請指定「讀音」欄位</p>}
+            {missingRequired && <p className="text-right text-sm text-red-600">請指定「{kind === 'sentence' ? '日文句子' : '讀音'}」欄位</p>}
           </section>
         </>
       )}

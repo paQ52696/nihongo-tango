@@ -13,6 +13,11 @@ export const ERROR_LABELS: Record<ErrorType, string> = {
   alt_reading: '音讀／訓讀混淆',
   kanji_confusion: '漢字混淆',
   meaning: '意思混淆',
+  conjugation: '動詞變化錯誤',
+  particle: '助詞錯誤',
+  word_order: '語順錯誤',
+  translation: '翻譯錯誤',
+  grammar: '文法錯誤',
   timeout: '未作答／超時',
   other: '其他',
 }
@@ -58,5 +63,16 @@ export function classifyError(
     }
     case 'kanji2meaning':
       return 'meaning'
+    case 'conjugate':
+      return 'conjugation'
+    case 'particle':
+      return 'particle'
+    case 'reorder':
+      return 'word_order'
+    case 'ja2zh':
+    case 'zh2ja':
+      return 'translation'
+    case 'grammar':
+      return 'grammar'
   }
 }

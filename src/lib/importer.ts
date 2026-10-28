@@ -3,9 +3,22 @@ import * as XLSX from 'xlsx'
 import type { Deck, DeckEntry, Word } from '../types'
 import { displaySurface, primaryReading } from './distractors'
 import { hasKanji, normalizeReading } from './kana'
+import { splitChunks } from './sentences'
 
-export const FIELDS = ['kanji', 'reading', 'pos', 'meaning', 'example', 'exampleTranslation', 'page', 'lesson', 'tags', 'note'] as const
-export type Field = (typeof FIELDS)[number]
+export const ALL_FIELDS = ['kanji', 'reading', 'pos', 'meaning', 'example', 'exampleTranslation', 'page', 'lesson', 'tags', 'note', 'speaker'] as const
+export type Field = (typeof ALL_FIELDS)[number]
+/** 單字匯入的欄位 */
+export const FIELDS: Field[] = ['kanji', 'reading', 'pos', 'meaning', 'example', 'exampleTranslation', 'page', 'lesson', 'tags', 'note']
+/** 課文句子匯入的欄位 */
+export const SENTENCE_FIELDS: Field[] = ['kanji', 'reading', 'meaning', 'lesson', 'speaker', 'tags']
+
+export type ImportKind = 'word' | 'sentence'
+
+export const SENTENCE_FIELD_LABELS: Partial<Record<Field, string>> = {
+  kanji: '日文句子（用 | 分文節）',
+  reading: '讀音（選填，用 | 分文節）',
+  meaning: '中文翻譯',
+}
 
 export const FIELD_LABELS: Record<Field, string> = {
   kanji: '漢字表記',
@@ -18,6 +31,7 @@ export const FIELD_LABELS: Record<Field, string> = {
   lesson: '課次／章節',
   tags: '標籤',
   note: '備註',
+  speaker: '說話者',
 }
 
 const ALIASES: Record<Field, string[]> = {
@@ -31,6 +45,7 @@ const ALIASES: Record<Field, string[]> = {
   lesson: ['課', '課次', '課別', '章節', '章', '單元', 'lesson', 'chapter', 'unit'],
   tags: ['標籤', '标签', 'tag', 'tags', 'タグ'],
   note: ['備註', '备注', '附註', 'note', 'notes', 'memo', 'メモ'],
+  speaker: ['說話者', '說話人', '角色', '話者', 'speaker', 'role'],
 }
 
 export interface ParsedTable {
@@ -56,7 +71,10 @@ const cell = (v: unknown) => (v === null || v === undefined ? '' : String(v).tri
 function sheetToTable(wb: XLSX.WorkBook): ParsedTable {
   const ws = wb.Sheets[wb.SheetNames[0]]
   const aoa = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: '', blankrows: false })
-  const rows = aoa.map((r) => r.map(cell))
+  return rowsToTable(aoa.map((r) => r.map(cell)))
+}
+
+function rowsToTable(rows: string[][]): ParsedTable {
   // 找第一個非空列當標題
   const hi = rows.findIndex((r) => r.some((c) => c))
   if (hi < 0) return { headers: [], rows: [] }
@@ -65,18 +83,53 @@ function sheetToTable(wb: XLSX.WorkBook): ParsedTable {
   return { headers, rows: rows.slice(hi + 1).filter((r) => r.some((c) => c)).map((r) => Array.from({ length: width }, (_, i) => r[i] ?? '')) }
 }
 
+/**
+ * CSV／TSV：自己解析，分隔符號只看標題列決定（逗號、Tab、分號）。
+ * SheetJS 會看整份內容猜分隔符號，課文句子用「|」分文節時會被誤判成欄位分隔。
+ */
 export function parseCsv(text: string): ParsedTable {
-  return sheetToTable(XLSX.read(text, { type: 'string', raw: true }))
+  const src = text.replace(/^﻿/, '')
+  const firstLine = src.split(/\r?\n/, 1)[0]
+  const sep = [',', '\t', ';'].reduce((best, s) => (firstLine.split(s).length > firstLine.split(best).length ? s : best), ',')
+  const rows: string[][] = []
+  let row: string[] = []
+  let field = ''
+  let quoted = false
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i]
+    if (quoted) {
+      if (ch === '"' && src[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (ch === '"') quoted = false
+      else field += ch
+    } else if (ch === '"' && field === '') quoted = true
+    else if (ch === sep) {
+      row.push(field)
+      field = ''
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && src[i + 1] === '\n') i++
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+    } else field += ch
+  }
+  if (field || row.length) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rowsToTable(rows.map((r) => r.map(cell)).filter((r) => r.some((c) => c)))
 }
 
 export function parseXlsx(buf: ArrayBuffer | Uint8Array): ParsedTable {
   return sheetToTable(XLSX.read(buf, { type: 'array' }))
 }
 
-/** JSON：物件陣列、{ words: [...] }（本 App 匯出格式或 PDF 腳本輸出）皆可 */
+/** JSON：物件陣列、{ words: [...] }（本 App 匯出格式或 PDF 腳本輸出）、{ sentences: [...] }（課文）皆可 */
 export function parseJson(text: string): ParsedTable {
   const data = JSON.parse(text.replace(/^﻿/, ''))
-  const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.words) ? data.words : Array.isArray(data?.entries) ? data.entries : []
+  const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.words) ? data.words : Array.isArray(data?.sentences) ? data.sentences : Array.isArray(data?.entries) ? data.entries : []
   if (!list.length) throw new Error('JSON 裡找不到單字陣列（需要是陣列，或含有 words 陣列的物件）')
   const headers: string[] = []
   for (const o of list) for (const k of Object.keys(o)) if (!headers.includes(k)) headers.push(k)
@@ -94,13 +147,21 @@ export function parseFile(name: string, buf: ArrayBuffer): ParsedTable {
 
 export type Mapping = Record<Field, number>
 
+/** 看起來像課文句子：有「說話者」欄，或日文欄用 | 分了文節 */
+export function guessKind(table: ParsedTable): ImportKind {
+  const m = guessMapping(table.headers)
+  if (m.speaker >= 0) return 'sentence'
+  if (m.kanji >= 0 && table.rows.some((r) => /[|｜]/.test(r[m.kanji] ?? ''))) return 'sentence'
+  return 'word'
+}
+
 export function guessMapping(headers: string[]): Mapping {
   const norm = (s: string) => s.toLowerCase().replace(/[\s_\-（）()]/g, '')
-  const m = Object.fromEntries(FIELDS.map((f) => [f, -1])) as Mapping
+  const m = Object.fromEntries(ALL_FIELDS.map((f) => [f, -1])) as Mapping
   const used = new Set<number>()
   // 先比完全相同，再比包含
   for (const pass of ['exact', 'contains'] as const) {
-    for (const f of FIELDS) {
+    for (const f of ALL_FIELDS) {
       if (m[f] >= 0) continue
       const idx = headers.findIndex((h, i) => {
         if (used.has(i)) return false
@@ -129,10 +190,13 @@ export interface WordDraft {
   tags: string[]
   note: string
   problems: string[]
+  /** 單字以外的欄位（課文句子的文節、文法點 id…） */
+  extra?: Partial<Word>
 }
 
-export function rowsToDrafts(table: ParsedTable, mapping: Mapping): WordDraft[] {
+export function rowsToDrafts(table: ParsedTable, mapping: Mapping, kind: ImportKind = 'word'): WordDraft[] {
   const get = (r: string[], f: Field) => (mapping[f] >= 0 ? (r[mapping[f]] ?? '').trim() : '')
+  if (kind === 'sentence') return table.rows.map((r, i) => sentenceDraft(i + 2, get(r, 'kanji'), get(r, 'reading'), get(r, 'meaning'), get(r, 'lesson'), get(r, 'speaker'), get(r, 'tags')))
   return table.rows.map((r, i) => {
     const pageRaw = get(r, 'page').replace(/^p\.?\s*/i, '')
     const page = pageRaw && /^\d+$/.test(pageRaw) ? parseInt(pageRaw, 10) : null
@@ -158,6 +222,36 @@ export function rowsToDrafts(table: ParsedTable, mapping: Mapping): WordDraft[] 
   })
 }
 
+/** 課文句子：「|」分出的文節存在 chunks，讀音也分好的話存在 chunkReadings */
+export function sentenceDraft(row: number, ja: string, reading: string, zh: string, lesson: string, speaker: string, tags = ''): WordDraft {
+  const chunks = splitChunks(ja)
+  const readings = splitChunks(reading)
+  const d: WordDraft = {
+    row,
+    kanji: chunks.join(''),
+    reading: readings.join(''),
+    pos: '',
+    meaning: zh,
+    example: '',
+    exampleTranslation: '',
+    page: null,
+    lesson: lesson || null,
+    tags: tags.split(/[,，、;；]/).map((t) => t.trim()).filter(Boolean),
+    note: '',
+    problems: [],
+    extra: {
+      kind: 'sentence',
+      ...(chunks.length > 1 ? { chunks } : {}),
+      ...(chunks.length > 1 && readings.length === chunks.length ? { chunkReadings: readings } : {}),
+      ...(speaker ? { speaker } : {}),
+    },
+  }
+  if (!d.kanji) d.problems.push('缺少日文')
+  if (!d.meaning) d.problems.push('缺少中文翻譯')
+  if (reading && readings.length !== chunks.length) d.problems.push('讀音的文節數和日文不同（中翻日只接受漢字寫法）')
+  return d
+}
+
 /** 重複比對用的 key：表記＋讀音 */
 export function wordKey(w: { kanji: string; reading: string }): string {
   const surface = displaySurface(w)
@@ -179,7 +273,8 @@ export function checkDuplicates(drafts: WordDraft[], words: Word[], deckEntries:
   const inDeck = new Set(deckEntries.filter((e) => !e.deleted && e.deckId === deckId).map((e) => e.wordId))
   const seen = new Set<string>()
   return drafts.map((draft) => {
-    if (!draft.reading) return { draft, status: 'invalid' as const }
+    // 單字一定要有讀音；課文句子、文法點只要有日文
+    if (draft.extra?.kind ? !draft.kanji : !draft.reading) return { draft, status: 'invalid' as const }
     const key = wordKey(draft)
     if (seen.has(key)) return { draft, status: 'dupInFile' as const }
     seen.add(key)
