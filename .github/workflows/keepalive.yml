@@ -18,9 +18,22 @@ jobs:
           URL: ${{ secrets.VITE_SUPABASE_URL }}
           KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "$URL" ] || [ -z "$KEY" ]; then echo "沒有設定 Supabase，略過"; exit 0; fi
-          body=$(curl -sS -w '\n%{http_code}' "$URL/rest/v1/decks?select=id&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
-          code=$(echo "$body" | tail -n1)
-          echo "HTTP $code"
-          # 200＝查到；401／403 且是 42501＝資料庫回應了「沒有權限」，也算有活動
-          if [ "$code" = "200" ] || echo "$body" | grep -q '42501'; then echo "Supabase 有回應"; else echo "$body"; exit 1; fi
+          # 貼上 secrets 時常多帶空白、換行或結尾的斜線，先清掉
+          URL=$(printf '%s' "$URL" | tr -d '[:space:]' | sed 's#/*$##')
+          KEY=$(printf '%s' "$KEY" | tr -d '[:space:]')
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then echo "沒有設定 VITE_SUPABASE_URL／VITE_SUPABASE_ANON_KEY，略過"; exit 0; fi
+          echo "網址：$(printf '%s' "$URL" | sed -E 's#(https?://)[^.]{4}[^.]*#\1****#')"
+          rm -f body.json
+          code=$(curl -s --retry 3 --retry-all-errors --max-time 30 -o body.json -w '%{http_code}' \
+            "$URL/rest/v1/decks?select=id&limit=1" -H "apikey: $KEY" || true)
+          # 只印出錯誤代碼與訊息（不會含金鑰）
+          echo "::notice::HTTP $code：$(head -c 300 body.json 2>/dev/null || true)"
+          case "$code" in
+            200) echo "Supabase 有回應" ;;
+            401|403)
+              if grep -q '42501' body.json; then echo "Supabase 有回應（資料庫回答「沒有權限」，代表查詢有到資料庫）"
+              else echo "::error::Supabase 拒絕了金鑰：請確認 repo secrets 的 VITE_SUPABASE_ANON_KEY 和 .env 相同"; exit 1; fi ;;
+            000) echo "::error::連不到 Supabase：請確認 VITE_SUPABASE_URL 是 https://xxxx.supabase.co"; exit 1 ;;
+            5*|540) echo "::error::Supabase 沒有正常回應（專案可能已經暫停，請到 Supabase 網站按 Restore）"; exit 1 ;;
+            *) echo "Supabase 有回應（HTTP $code）" ;;
+          esac
