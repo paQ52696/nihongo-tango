@@ -18,8 +18,10 @@ jobs:
           URL: ${{ secrets.VITE_SUPABASE_URL }}
           KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          # 貼上 secrets 時常多帶空白、換行或結尾的斜線，先清掉
-          URL=$(printf '%s' "$URL" | tr -d '[:space:]' | sed 's#/*$##')
+          # 貼上 secrets 時常多帶空白、換行；網址只留 https://xxxx.supabase.co（去掉 /rest/v1 之類的路徑）
+          RAW=$(printf '%s' "$URL" | tr -d '[:space:]')
+          URL=$(printf '%s' "$RAW" | sed -E 's#^(https?://[^/]+).*#\1#')
+          if [ "$RAW" != "$URL" ] && [ "$RAW" != "$URL/" ]; then echo "::warning::VITE_SUPABASE_URL 後面多了路徑，已自動去掉（只需要 https://xxxx.supabase.co）"; fi
           KEY=$(printf '%s' "$KEY" | tr -d '[:space:]')
           if [ -z "$URL" ] || [ -z "$KEY" ]; then echo "沒有設定 VITE_SUPABASE_URL／VITE_SUPABASE_ANON_KEY，略過"; exit 0; fi
           echo "網址：$(printf '%s' "$URL" | sed -E 's#(https?://)[^.]{4}[^.]*#\1****#')"
