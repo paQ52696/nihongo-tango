@@ -88,7 +88,7 @@ export async function waitSynced(page: Page) {
 export async function login(page: Page, email: string) {
   await page.getByTestId('sync-badge').click()
   await page.getByLabel('Email').fill(email)
-  await page.getByRole('button', { name: '寄送登入連結' }).click()
+  await page.getByRole('button', { name: '寄送登入信' }).click()
   await expect(page.getByTestId('user-email')).toHaveText(email)
   await page.keyboard.press('Escape')
 }

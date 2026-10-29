@@ -69,3 +69,21 @@ test('兩個瀏覽器登入同一帳號：A 作答後 B 同步就看到；兩邊
   await ctxA.close()
   await ctxB.close()
 })
+
+test('用信中的驗證碼登入（安裝成 App 時用這個）；Google 按鈕沒設定時不顯示', async ({ page, request }) => {
+  await request.post('http://localhost:8787/reset')
+  await openApp(page)
+  await page.getByTestId('sync-badge').click()
+  await expect(page.getByRole('button', { name: '使用 Google 登入' })).toHaveCount(0)
+  const email = `ipad+code-${Date.now()}@example.com`
+  await page.getByLabel('Email').fill(email)
+  await page.getByRole('button', { name: '寄送登入信' }).click()
+  const code = page.getByTestId('login-code')
+  await expect(code).toBeVisible()
+  await code.fill('000000')
+  await page.getByRole('button', { name: '登入', exact: true }).click()
+  await expect(page.getByText('驗證碼錯誤或已過期')).toBeVisible()
+  await code.fill('123 456')
+  await page.getByRole('button', { name: '登入', exact: true }).click()
+  await expect(page.getByTestId('user-email')).toHaveText(email)
+})

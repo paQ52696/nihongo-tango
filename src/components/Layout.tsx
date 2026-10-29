@@ -22,20 +22,21 @@ export function Layout() {
     <div className="min-h-screen pb-20 md:pb-8">
       <header className="sticky top-0 z-30 border-b border-line-soft bg-[var(--header-bg)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2">
-          <NavLink to="/" className="flex min-h-11 shrink-0 items-center gap-2.5 text-ink">
+          <NavLink to="/" className="flex min-h-11 shrink-0 items-center gap-2.5 text-ink" aria-label="単語れんしゅう 首頁">
             <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-accent font-mincho text-xl font-extrabold text-[var(--on-accent)]" aria-hidden>
               <span className="-rotate-4">単</span>
             </span>
-            <span className="jp hidden font-display text-lg font-bold sm:inline">単語れんしゅう</span>
+            {/* iPad 直式（md～lg）放不下：只留印章，讓選單排成一行 */}
+            <span className="jp hidden font-display text-lg font-bold sm:inline md:hidden lg:inline">単語れんしゅう</span>
           </NavLink>
-          <nav className="hidden flex-1 flex-wrap items-center gap-1 md:flex" aria-label="主選單">
+          <nav className="hidden flex-1 flex-wrap items-center gap-0.5 md:flex lg:gap-1" aria-label="主選單">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 end={n.end}
                 className={({ isActive }) =>
-                  `inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3.5 text-sm transition-colors ${isActive ? 'bg-ink font-bold text-surface' : 'text-ink-2 hover:bg-pattern-line'}`
+                  `inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-2.5 text-sm transition-colors lg:px-3.5 ${isActive ? 'bg-ink font-bold text-surface' : 'text-ink-2 hover:bg-pattern-line'}`
                 }
               >
                 {n.label}
@@ -106,13 +107,30 @@ export function SyncBadge() {
   )
 }
 
+/** Google 登入要先在 Supabase 設定 Google 供應商，設好後在 .env／GitHub Secrets 加 VITE_GOOGLE_LOGIN=1 才顯示 */
+const GOOGLE_LOGIN = import.meta.env.VITE_GOOGLE_LOGIN === '1'
+
 export function AccountPanel() {
   const s = useSync()
   const [email, setEmail] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // 寄出登入信後：輸入信中的驗證碼（安裝成 App 時信中的連結會開到瀏覽器，只能用驗證碼）
+  const [codeSent, setCodeSent] = useState(false)
+  const [code, setCode] = useState('')
   const backend = getEngine().getBackend()
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true)
+    setErr(null)
+    try {
+      await fn()
+    } catch (x) {
+      setErr(String((x as Error).message))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   if (s.status === 'local-only')
     return (
@@ -149,35 +167,78 @@ export function AccountPanel() {
   return (
     <form
       className="space-y-3 text-sm"
-      onSubmit={async (e) => {
+      onSubmit={(e) => {
         e.preventDefault()
         if (!backend || !email.trim()) return
-        setBusy(true)
-        setErr(null)
-        try {
-          const r = await backend.signInWithEmail(email.trim())
-          setMsg(r.message)
-        } catch (x) {
-          setErr(String((x as Error).message))
-        } finally {
-          setBusy(false)
-        }
+        if (codeSent)
+          run(async () => {
+            await backend.verifyEmailCode(email.trim(), code.replace(/\s/g, ''))
+          })
+        else
+          run(async () => {
+            const r = await backend.signInWithEmail(email.trim())
+            setMsg(r.message)
+            if (r.needsCode) setCodeSent(true)
+          })
       }}
     >
-      <p>登入後，學習進度會在 Windows、Mac、手機之間同步。沒登入也能照常離線使用。</p>
+      <p>登入後，學習進度會在 Windows、Mac、iPad、手機之間同步。沒登入也能照常離線使用。</p>
       <label className="label" htmlFor="login-email">
         Email
       </label>
-      <input id="login-email" className="input" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      <div className="flex flex-wrap gap-2">
-        <button className="btn-primary" disabled={busy} type="submit">
-          寄送登入連結
-        </button>
-        <button type="button" className="btn-secondary" disabled={busy} onClick={() => backend?.signInWithGoogle().catch((x) => setErr(String(x.message)))}>
-          使用 Google 登入
-        </button>
-      </div>
-      {msg && <p className="text-ok">{msg}</p>}
+      <input id="login-email" className="input" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required readOnly={codeSent} />
+      {codeSent ? (
+        <>
+          {msg && <p className="text-ok">{msg}</p>}
+          <label className="label" htmlFor="login-code">
+            驗證碼
+          </label>
+          <input
+            id="login-code"
+            className="input max-w-[12rem] text-center font-display text-xl tracking-[0.3em]"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9 ]{6,10}"
+            maxLength={12}
+            placeholder="123456"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            required
+            autoFocus
+            data-testid="login-code"
+          />
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-primary" disabled={busy || code.replace(/\s/g, '').length < 6} type="submit">
+              登入
+            </button>
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={busy}
+              onClick={() => {
+                setCodeSent(false)
+                setCode('')
+                setMsg(null)
+                setErr(null)
+              }}
+            >
+              重新寄送／換一個 Email
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <button className="btn-primary" disabled={busy} type="submit">
+            寄送登入信
+          </button>
+          {GOOGLE_LOGIN && (
+            <button type="button" className="btn-secondary" disabled={busy} onClick={() => run(() => backend!.signInWithGoogle())}>
+              使用 Google 登入
+            </button>
+          )}
+        </div>
+      )}
+      {!codeSent && msg && <p className="text-ok">{msg}</p>}
       {err && <p className="text-accent">{err}</p>}
     </form>
   )

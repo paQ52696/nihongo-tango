@@ -52,7 +52,12 @@ export class SupabaseBackend implements SyncBackend {
   async signInWithEmail(email: string) {
     const { error } = await this.client.auth.signInWithOtp({ email, options: { emailRedirectTo: this.redirectUrl() } })
     if (error) throw new Error(error.message)
-    return { message: `登入連結已寄到 ${email}，請在「這個瀏覽器」打開信中的連結。` }
+    return { message: `登入信已寄到 ${email}。請輸入信中的驗證碼；用瀏覽器開網站的話，也可以直接點信中的連結。`, needsCode: true }
+  }
+
+  async verifyEmailCode(email: string, code: string) {
+    const { error } = await this.client.auth.verifyOtp({ email, token: code, type: 'email' })
+    if (error) throw new Error(/expired|invalid/i.test(error.message) ? '驗證碼錯誤或已過期，請重新寄一次' : error.message)
   }
 
   async signInWithGoogle() {

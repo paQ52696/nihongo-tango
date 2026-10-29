@@ -218,11 +218,16 @@ python scripts/convert_doc.py data/期中考.docx -o data/out/midterm.csv
 6. 左側 **Authentication → URL Configuration**：
    - **Site URL**：你的正式網址，例如 `https://<帳號>.github.io/<repo>/`
    - **Redirect URLs** 加上：`http://localhost:5173/`、`http://localhost:4173/`、`https://<帳號>.github.io/<repo>/`
-7. 重新 `npm run dev`，右上角狀態會變成「未登入」→ 點它 → 輸入 Email → 收信點連結登入
-   - 登入連結請用「**同一個瀏覽器**」打開（使用 PKCE，安全性較高）
-8. 在另一台裝置也登入同一個 Email。第一次登入時，若兩邊都有資料，會問你「合併」或「以雲端為準」
+7. 左側 **Authentication → Emails**（或 Email Templates），把 **Magic Link** 和 **Confirm signup** 兩個範本的內容各加一行驗證碼：
+   ```html
+   <p>驗證碼：<strong>{{ .Token }}</strong></p>
+   ```
+   - 安裝成 App（iPhone／iPad 加入主畫面、Windows／Mac 安裝）後，信中的連結會開到瀏覽器而不是 App（兩邊的登入狀態不共用），所以 App 裡要輸入驗證碼登入
+8. 重新 `npm run dev`，右上角狀態會變成「未登入」→ 點它 → 輸入 Email →「寄送登入信」→ 輸入信中的驗證碼
+   - 在瀏覽器裡用的話，也可以直接點信中的連結，但要用「**同一個瀏覽器**」打開（使用 PKCE，安全性較高）
+9. 在另一台裝置也登入同一個 Email。第一次登入時，若兩邊都有資料，會問你「合併」或「以雲端為準」
 
-**Google 登入（選用）**：Authentication → Providers → Google → 依畫面說明到 Google Cloud Console 建立 OAuth 用戶端，把 Client ID／Secret 填回 Supabase。沒設定的話按「使用 Google 登入」會顯示錯誤訊息，Email 登入不受影響。
+**Google 登入（選用，預設不顯示）**：Authentication → Providers → Google → 依畫面說明到 Google Cloud Console 建立 OAuth 用戶端，把 Client ID／Secret 填回 Supabase。設好後在 `.env` 和 GitHub Secrets 加 `VITE_GOOGLE_LOGIN=1`，「使用 Google 登入」按鈕才會出現。
 
 **同步規則**：作答先寫本機，背景上傳；斷線時右上角顯示「離線、N 筆待上傳」，恢復連線自動重試。同一筆資料以較新的修改為準；作答紀錄只新增不修改，兩邊直接合併；刪除是軟刪除，會同步到其他裝置。
 

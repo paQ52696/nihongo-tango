@@ -16,7 +16,10 @@ export interface SyncBackend {
   readonly kind: 'supabase' | 'mock'
   getUser(): Promise<SyncUser | null>
   onAuthChange(cb: (user: SyncUser | null) => void): () => void
-  signInWithEmail(email: string): Promise<{ message: string }>
+  /** 寄登入信。needsCode：要在 App 裡輸入信中的驗證碼（安裝成 App 時連結會開到瀏覽器，只能用驗證碼） */
+  signInWithEmail(email: string): Promise<{ message: string; needsCode?: boolean }>
+  /** 用信中的驗證碼登入 */
+  verifyEmailCode(email: string, code: string): Promise<void>
   signInWithGoogle(): Promise<void>
   signOut(): Promise<void>
   /** 上傳；伺服器端以 updated_at 較新者為準 */

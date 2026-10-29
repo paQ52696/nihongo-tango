@@ -74,10 +74,21 @@ export class MockBackend implements SyncBackend {
   }
 
   async signInWithEmail(email: string) {
+    // 測試驗證碼流程：信箱含「+code」時改成要輸入驗證碼（模擬的驗證碼是 123456）
+    if (email.includes('+code')) return { message: '（模擬雲端）請輸入驗證碼 123456。', needsCode: true }
+    this.setUser(email)
+    return { message: '（模擬雲端）已直接登入，不會寄出信件。' }
+  }
+
+  async verifyEmailCode(email: string, code: string) {
+    if (code !== '123456') throw new Error('驗證碼錯誤或已過期，請重新寄一次')
+    this.setUser(email)
+  }
+
+  private setUser(email: string) {
     const user = { id: userIdFromEmail(email), email: email.trim() }
     store.set(this.key, JSON.stringify(user))
     this.emit(user)
-    return { message: '（模擬雲端）已直接登入，不會寄出信件。' }
   }
 
   async signInWithGoogle() {
