@@ -20,6 +20,10 @@ export interface SyncBackend {
   signInWithEmail(email: string): Promise<{ message: string; needsCode?: boolean }>
   /** 用信中的驗證碼登入 */
   verifyEmailCode(email: string, code: string): Promise<void>
+  /** Email＋密碼登入（不用收信；安裝成 App 的裝置用這個最方便） */
+  signInWithPassword(email: string, password: string): Promise<void>
+  /** 已登入時設定／更改密碼 */
+  setPassword(password: string): Promise<void>
   signInWithGoogle(): Promise<void>
   signOut(): Promise<void>
   /** 上傳；伺服器端以 updated_at 較新者為準 */

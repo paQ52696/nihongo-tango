@@ -218,13 +218,11 @@ python scripts/convert_doc.py data/期中考.docx -o data/out/midterm.csv
 6. 左側 **Authentication → URL Configuration**：
    - **Site URL**：你的正式網址，例如 `https://<帳號>.github.io/<repo>/`
    - **Redirect URLs** 加上：`http://localhost:5173/`、`http://localhost:4173/`、`https://<帳號>.github.io/<repo>/`
-7. 左側 **Authentication → Emails**（或 Email Templates），把 **Magic Link** 和 **Confirm signup** 兩個範本的內容各加一行驗證碼：
-   ```html
-   <p>驗證碼：<strong>{{ .Token }}</strong></p>
-   ```
-   - 安裝成 App（iPhone／iPad 加入主畫面、Windows／Mac 安裝）後，信中的連結會開到瀏覽器而不是 App（兩邊的登入狀態不共用），所以 App 裡要輸入驗證碼登入
-8. 重新 `npm run dev`，右上角狀態會變成「未登入」→ 點它 → 輸入 Email →「寄送登入信」→ 輸入信中的驗證碼
-   - 在瀏覽器裡用的話，也可以直接點信中的連結，但要用「**同一個瀏覽器**」打開（使用 PKCE，安全性較高）
+7. 重新 `npm run dev`，右上角狀態會變成「未登入」→ 點它 → 輸入 Email →「寄送登入信」→ 用「**同一個瀏覽器**」打開信中的連結（使用 PKCE，安全性較高）
+8. **安裝成 App 的裝置（iPhone／iPad 加入主畫面等）**：App 和瀏覽器的登入狀態不共用，信中連結會開到瀏覽器，所以 App 裡要用密碼登入：
+   - 先在任一瀏覽器登入 → 右上角「帳號與同步」→「設定密碼」
+   - 在 App 裡選「密碼登入」，輸入 Email 和密碼
+   - （選用）設定自己的 SMTP 後，Supabase 才能編輯信件範本；在 **Magic link or OTP** 範本加 `{{ .Token }}`，信裡就會有驗證碼，可以在 App 裡輸入驗證碼登入
 9. 在另一台裝置也登入同一個 Email。第一次登入時，若兩邊都有資料，會問你「合併」或「以雲端為準」
 
 **Google 登入（選用，預設不顯示）**：Authentication → Providers → Google → 依畫面說明到 Google Cloud Console 建立 OAuth 用戶端，把 Client ID／Secret 填回 Supabase。設好後在 `.env` 和 GitHub Secrets 加 `VITE_GOOGLE_LOGIN=1`，「使用 Google 登入」按鈕才會出現。

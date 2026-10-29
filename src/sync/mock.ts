@@ -85,6 +85,20 @@ export class MockBackend implements SyncBackend {
     this.setUser(email)
   }
 
+  async signInWithPassword(email: string, password: string) {
+    const user = userIdFromEmail(email)
+    const ok = this.cloud ? this.cloud.checkPassword(user, password) : (await this.http<{ ok: boolean }>('/check-password', { user, password })).ok
+    if (!ok) throw new Error('Email 或密碼錯誤。還沒設定過密碼的話：先在瀏覽器用「寄送登入信」登入，再到「帳號與同步」設定密碼。')
+    this.setUser(email)
+  }
+
+  async setPassword(password: string) {
+    const u = await this.requireUser()
+    if (password.length < 6) throw new Error('密碼太短，至少要 6 個字元')
+    if (this.cloud) this.cloud.setPassword(u.id, password)
+    else await this.http('/set-password', { user: u.id, password })
+  }
+
   private setUser(email: string) {
     const user = { id: userIdFromEmail(email), email: email.trim() }
     store.set(this.key, JSON.stringify(user))

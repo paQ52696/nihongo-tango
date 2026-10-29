@@ -87,3 +87,27 @@ test('用信中的驗證碼登入（安裝成 App 時用這個）；Google 按�
   await page.getByRole('button', { name: '登入', exact: true }).click()
   await expect(page.getByTestId('user-email')).toHaveText(email)
 })
+
+test('在瀏覽器登入後設定密碼，另一台裝置（例如 iPad 的 App）用密碼登入', async ({ browser, request }) => {
+  await request.post('http://localhost:8787/reset')
+  const email = `pw-${Date.now()}@example.com`
+  const A = await (await browser.newContext()).newPage()
+  await openApp(A)
+  await login(A, email)
+  await A.getByTestId('sync-badge').click()
+  await A.getByLabel('設定密碼').fill('sakura2026')
+  await A.getByRole('button', { name: '設定密碼' }).click()
+  await expect(A.getByText('密碼已設定')).toBeVisible()
+
+  const B = await (await browser.newContext()).newPage()
+  await openApp(B)
+  await B.getByTestId('sync-badge').click()
+  await B.getByRole('radio', { name: '密碼登入' }).click()
+  await B.getByLabel('Email').fill(email)
+  await B.getByLabel('密碼', { exact: true }).fill('wrong-pass')
+  await B.getByRole('button', { name: '登入', exact: true }).click()
+  await expect(B.getByText('Email 或密碼錯誤')).toBeVisible()
+  await B.getByLabel('密碼', { exact: true }).fill('sakura2026')
+  await B.getByRole('button', { name: '登入', exact: true }).click()
+  await expect(B.getByTestId('user-email')).toHaveText(email)
+})

@@ -54,8 +54,18 @@ export class MockCloud {
     return false
   }
 
+  // 模擬 Supabase 的密碼登入
+  private passwords = new Map<string, string>()
+  setPassword(user: string, password: string): void {
+    this.passwords.set(user, password)
+  }
+  checkPassword(user: string, password: string): boolean {
+    return this.passwords.get(user) === password
+  }
+
   reset(): void {
     this.data.clear()
+    this.passwords.clear()
     this.seq = 0
   }
 }

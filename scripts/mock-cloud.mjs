@@ -31,6 +31,11 @@ createServer(async (req, res) => {
         return send(res, 200, cloud.pull(body.user, body.table, body.cursor, body.limit))
       case '/has':
         return send(res, 200, { hasData: cloud.hasData(body.user) })
+      case '/set-password':
+        cloud.setPassword(body.user, body.password)
+        return send(res, 200, { ok: true })
+      case '/check-password':
+        return send(res, 200, { ok: cloud.checkPassword(body.user, body.password) })
       case '/reset':
         cloud.reset()
         return send(res, 200, { ok: true })

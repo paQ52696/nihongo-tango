@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { BookX, Check, ChartColumn, CircleAlert, CloudOff, HardDrive, House, Lightbulb, PencilLine, RefreshCw, Settings, UserRound, type LucideIcon } from 'lucide-react'
 import { useSync, getEngine } from '../sync'
-import { Modal } from './ui'
+import { Modal, Segmented } from './ui'
+import { isStandalone } from '../lib/browser'
 
 const NAV: { to: string; label: string; icon?: LucideIcon; end?: boolean }[] = [
   { to: '/', label: '首頁', icon: House, end: true },
@@ -119,6 +120,9 @@ export function AccountPanel() {
   // 寄出登入信後：輸入信中的驗證碼（安裝成 App 時信中的連結會開到瀏覽器，只能用驗證碼）
   const [codeSent, setCodeSent] = useState(false)
   const [code, setCode] = useState('')
+  // 安裝成 App 時信中連結會開到瀏覽器，所以預設用密碼登入
+  const [method, setMethod] = useState<'password' | 'email'>(isStandalone() ? 'password' : 'email')
+  const [password, setPassword] = useState('')
   const backend = getEngine().getBackend()
   const run = async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -161,6 +165,7 @@ export function AccountPanel() {
             登出
           </button>
         </div>
+        <PasswordSetter />
       </div>
     )
 
@@ -170,7 +175,11 @@ export function AccountPanel() {
       onSubmit={(e) => {
         e.preventDefault()
         if (!backend || !email.trim()) return
-        if (codeSent)
+        if (method === 'password')
+          run(async () => {
+            await backend.signInWithPassword(email.trim(), password)
+          })
+        else if (codeSent)
           run(async () => {
             await backend.verifyEmailCode(email.trim(), code.replace(/\s/g, ''))
           })
@@ -183,11 +192,34 @@ export function AccountPanel() {
       }}
     >
       <p>登入後，學習進度會在 Windows、Mac、iPad、手機之間同步。沒登入也能照常離線使用。</p>
+      <Segmented
+        label="登入方式"
+        value={method}
+        onChange={(m) => {
+          setMethod(m)
+          setErr(null)
+        }}
+        options={[
+          { value: 'email', label: '寄登入信' },
+          { value: 'password', label: '密碼登入' },
+        ]}
+      />
       <label className="label" htmlFor="login-email">
         Email
       </label>
       <input id="login-email" className="input" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required readOnly={codeSent} />
-      {codeSent ? (
+      {method === 'password' ? (
+        <>
+          <label className="label" htmlFor="login-password">
+            密碼
+          </label>
+          <input id="login-password" className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+          <button className="btn-primary" disabled={busy} type="submit">
+            登入
+          </button>
+          <p className="text-xs text-muted">還沒設定過密碼？先在瀏覽器（Safari、Chrome…）用「寄登入信」登入，再到這個視窗設定密碼。之後安裝成 App 的裝置就能用密碼登入。</p>
+        </>
+      ) : codeSent ? (
         <>
           {msg && <p className="text-ok">{msg}</p>}
           <label className="label" htmlFor="login-code">
@@ -238,7 +270,49 @@ export function AccountPanel() {
           )}
         </div>
       )}
-      {!codeSent && msg && <p className="text-ok">{msg}</p>}
+      {method === 'email' && !codeSent && msg && <p className="text-ok">{msg}</p>}
+      {err && <p className="text-accent">{err}</p>}
+    </form>
+  )
+}
+
+/** 已登入時設定密碼：讓安裝成 App 的裝置（連結會開到瀏覽器）也能登入 */
+function PasswordSetter() {
+  const [pw, setPw] = useState('')
+  const [msg, setMsg] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const backend = getEngine().getBackend()
+  return (
+    <form
+      className="space-y-2 border-t border-dashed border-dash pt-3"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        if (!backend) return
+        setBusy(true)
+        setErr(null)
+        setMsg(null)
+        try {
+          await backend.setPassword(pw)
+          setPw('')
+          setMsg('密碼已設定。在 iPad／手機的 App 裡選「密碼登入」就能登入。')
+        } catch (x) {
+          setErr(String((x as Error).message))
+        } finally {
+          setBusy(false)
+        }
+      }}
+    >
+      <label className="label" htmlFor="set-password">
+        設定密碼（給安裝成 App 的裝置登入用）
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <input id="set-password" className="input max-w-xs flex-1" type="password" autoComplete="new-password" minLength={6} placeholder="至少 6 個字元" value={pw} onChange={(e) => setPw(e.target.value)} required />
+        <button className="btn-secondary" disabled={busy} type="submit">
+          設定密碼
+        </button>
+      </div>
+      {msg && <p className="text-ok" role="status">{msg}</p>}
       {err && <p className="text-accent">{err}</p>}
     </form>
   )
