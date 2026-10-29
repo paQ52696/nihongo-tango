@@ -16,7 +16,7 @@ export interface Word extends SyncFields {
   tags: string[]
   favorite: boolean
   note?: string
-  /** 沒有值＝單字；sentence＝課文句子；grammar＝文法點（存在 data jsonb，同步不需要改資料表） */
+  /** 沒有值＝單字；sentence＝課文句子；grammar＝文法點；counter＝數字・量詞（存在 data jsonb，同步不需要改資料表） */
   kind?: WordKind
   /** 課文句子：文節切分（語順重組、助詞填空用），合起來等於 kanji */
   chunks?: string[]
@@ -26,9 +26,11 @@ export interface Word extends SyncFields {
   speaker?: string
   /** 文法點：對應內建題庫的 id */
   grammarId?: string
+  /** 數字・量詞：對應內建題庫的 id（每次出題隨機挑一個數字） */
+  counterId?: string
 }
 
-export type WordKind = 'sentence' | 'grammar'
+export type WordKind = 'sentence' | 'grammar' | 'counter'
 
 export interface Deck extends SyncFields {
   name: string
@@ -73,7 +75,8 @@ export type QuestionMode =
   | 'typing'
   | 'listening'
   | 'cloze'
-  | 'conjugate' // 動詞變化（て形、ます形）
+  | 'conjugate' // 動詞變化（ます形、て形、ない形、た形、辭書形）
+  | 'adjective' // 形容詞變化（否定、過去、て形）
   // 課文句子
   | 'ja2zh' // 日翻中：看答案後自評
   | 'zh2ja' // 中翻日：打字，與課本原句比對
@@ -81,6 +84,8 @@ export type QuestionMode =
   | 'particle' // 助詞填空
   // 文法點
   | 'grammar'
+  // 數字・時間・日期・量詞
+  | 'counter'
 
 export type ErrorType =
   | 'long_vowel_missing'

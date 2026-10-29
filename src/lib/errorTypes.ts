@@ -13,7 +13,7 @@ export const ERROR_LABELS: Record<ErrorType, string> = {
   alt_reading: '音讀／訓讀混淆',
   kanji_confusion: '漢字混淆',
   meaning: '意思混淆',
-  conjugation: '動詞變化錯誤',
+  conjugation: '動詞／形容詞變化錯誤',
   particle: '助詞錯誤',
   word_order: '語順錯誤',
   translation: '翻譯錯誤',
@@ -49,6 +49,8 @@ export function classifyError(
   if (chosen === null || chosen === '') return 'timeout'
   if (correct === chosen) return null
   switch (mode) {
+    case 'counter':
+      return classifyReadingError(correct, chosen)
     case 'kanji2reading':
     case 'listening':
     case 'typing': {
@@ -64,6 +66,7 @@ export function classifyError(
     case 'kanji2meaning':
       return 'meaning'
     case 'conjugate':
+    case 'adjective':
       return 'conjugation'
     case 'particle':
       return 'particle'

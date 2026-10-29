@@ -1,4 +1,4 @@
-// 講解：動詞分組、て形變化與用法、第 13–16 課文法、我的動詞表（說明都是自行撰寫）
+// 講解：動詞分組、て形變化與用法、其他動詞變化、形容詞變化、數字・量詞、第 13–16 課文法、我的動詞表（說明都是自行撰寫）
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Lightbulb } from 'lucide-react'
@@ -6,13 +6,17 @@ import { bind, unbind } from 'wanakana'
 import { useAppData } from '../hooks/useData'
 import { PageTitle, Segmented, Toggle } from '../components/ui'
 import { GRAMMAR_SETS } from '../data/grammar'
-import { GROUP_LABELS, convertVerb, masuForm, teForm, teRule, verbInfo, type VerbGroup } from '../lib/conjugate'
+import { GROUP_LABELS, VERB_FORMS, convertVerb, formRule, masuForm, verbForm, verbInfo, type VerbForm, type VerbGroup } from '../lib/conjugate'
+import { AdjectiveSection, CounterSection, VerbFormsSection } from './LearnMore'
 
 const SECTIONS = [
   { id: 'groups', label: '動詞分組' },
   { id: 'te', label: 'て形變化' },
-  { id: 'converter', label: 'て形轉換器' },
+  { id: 'converter', label: '動詞轉換器' },
   { id: 'te-uses', label: 'て形的用法' },
+  { id: 'verb-forms', label: 'ない形・た形・辭書形' },
+  { id: 'adjectives', label: '形容詞變化' },
+  { id: 'counters', label: '數字・量詞' },
   { id: 'grammar', label: '第13–16課文法' },
   { id: 'my-verbs', label: '我的動詞表' },
 ]
@@ -59,7 +63,7 @@ function Converter() {
   const v = convertVerb(text, group === 'auto' ? undefined : group)
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted">輸入ます形或辭書形（可以打羅馬拼音，例如 kakimasu），看它屬於哪一類、用哪條規則變成て形。</p>
+      <p className="text-sm text-muted">輸入ます形或辭書形（可以打羅馬拼音，例如 kakimasu），看它屬於哪一類、每一種變化怎麼變。</p>
       <div className="flex flex-wrap items-end gap-3">
         <input
           ref={ref}
@@ -87,13 +91,18 @@ function Converter() {
       {text && !v && <p className="text-sm text-accent">看起來不是動詞。請輸入「〜ます」或辭書形（〜う段結尾）。</p>}
       {v && (
         <div className="rounded-xl border-[1.5px] border-dashed border-dash bg-washi p-4" data-testid="te-result">
-          <p className="jp text-2xl">
-            {v.masu?.surface ?? v.dict} → <strong className="text-accent">{teForm(v)}</strong>
-          </p>
-          <p className="mt-1 text-sm">
-            {GROUP_LABELS[v.group]}・{teRule(v)}
-            {!v.masu && <span className="jp ml-2 text-muted">（ます形：{masuForm(v)}）</span>}
-          </p>
+          <p className="mb-2 text-sm">{GROUP_LABELS[v.group]}</p>
+          <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-1.5">
+            {VERB_FORMS.map((f) => (
+              <div key={f.id} className="contents">
+                <dt className="text-sm text-muted">{f.label}</dt>
+                <dd>
+                  <strong className="jp text-xl text-accent">{verbForm(v, f.id)}</strong>
+                  <span className="ml-2 text-xs text-muted">{formRule(v, f.id)}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
           {v.guessed && <p className="mt-1 text-xs text-muted">分組是自動判斷的；像「話します」（I 類）、「見ます」（II 類）這種看外表判斷不出來，不對的話請手動選分組。</p>}
         </div>
       )}
@@ -104,6 +113,7 @@ function Converter() {
 export function LearnPage() {
   const data = useAppData()
   const [hideTe, setHideTe] = useState(true)
+  const [col, setCol] = useState<VerbForm>('te')
   const [shown, setShown] = useState<Set<string>>(new Set())
 
   // 我的單字庫裡的動詞（依分組），同一個字只列一次
@@ -214,7 +224,7 @@ export function LearnPage() {
         </Link>
       </Section>
 
-      <Section id="converter" title="③ て形轉換器">
+      <Section id="converter" title="③ 動詞變化轉換器">
         <Converter />
       </Section>
 
@@ -233,7 +243,19 @@ export function LearnPage() {
         </ul>
       </Section>
 
-      <Section id="grammar" title="⑤ 第 13–16 課文法">
+      <Section id="verb-forms" title="⑤ ない形・た形・辭書形">
+        <VerbFormsSection />
+      </Section>
+
+      <Section id="adjectives" title="⑥ 形容詞變化">
+        <AdjectiveSection />
+      </Section>
+
+      <Section id="counters" title="⑦ 數字・時間・日期・量詞">
+        <CounterSection />
+      </Section>
+
+      <Section id="grammar" title="⑧ 第 13–16 課文法">
         {GRAMMAR_SETS.map((set) => {
           const lessons = [...new Set(set.points.map((p) => p.lesson))]
           return lessons.map((lesson) => (
@@ -270,13 +292,19 @@ export function LearnPage() {
         </p>
       </Section>
 
-      <Section id="my-verbs" title="⑥ 我的動詞表">
+      <Section id="my-verbs" title="⑨ 我的動詞表">
         {!data ? null : verbs.length === 0 ? (
           <p className="text-sm text-muted">單字庫裡還沒有動詞（詞性要寫「動詞」，ます形要加分組，例如「動詞I」）。</p>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-muted">單字庫裡的 {verbs.length} 個動詞。遮住て形自己唸，點一下看答案。</p>
+              <p className="text-sm text-muted">單字庫裡的 {verbs.length} 個動詞。遮住變化形自己唸，點一下看答案。</p>
+              <Segmented
+                label="顯示哪一種變化"
+                value={col}
+                onChange={(v) => (setCol(v), setShown(new Set()))}
+                options={VERB_FORMS.filter((f) => f.id === 'te' || f.id === 'nai' || f.id === 'ta').map((f) => ({ value: f.id, label: f.label }))}
+              />
               <div className="min-w-40">
                 <Toggle
                   checked={hideTe}
@@ -284,7 +312,7 @@ export function LearnPage() {
                     setHideTe(v)
                     setShown(new Set())
                   }}
-                  label="遮住て形"
+                  label="遮住答案"
                 />
               </div>
             </div>
@@ -311,7 +339,7 @@ export function LearnPage() {
                             {v.masu?.surface ?? v.surface}
                             <span className="ml-1 text-xs text-muted">{lesson}</span>
                           </span>
-                          <span className={open ? 'font-bold text-accent ' : 'rounded bg-pattern-line px-2 text-transparent '}>{teForm(v)}</span>
+                          <span className={open ? 'font-bold text-accent ' : 'rounded bg-pattern-line px-2 text-transparent '}>{verbForm(v, col)}</span>
                         </button>
                       )
                     })}

@@ -22,6 +22,8 @@ import {
 } from '../lib/importer'
 import { GRAMMAR_SETS } from '../data/grammar'
 import { addGrammarSet } from '../db/grammar'
+import { DRILL_SETS } from '../data/drills'
+import { addDrillSet } from '../db/drills'
 
 const STATUS_LABEL: Record<DupStatus, { text: string; cls: string }> = {
   new: { text: '新增', cls: 'border border-ok text-ok' },
@@ -45,6 +47,8 @@ export function ImportPage() {
   const [result, setResult] = useState<(ImportResult & { deckId: string }) | null>(null)
   const [kind, setKind] = useState<ImportKind>('word')
   const [grammarMsg, setGrammarMsg] = useState<{ deckId: string; text: string } | null>(null)
+  const [drillMsg, setDrillMsg] = useState<{ deckId: string; mode: string; text: string } | null>(null)
+  const [drillBusy, setDrillBusy] = useState(false)
 
   const deckId = target === '__new' ? null : target
   const checks = useMemo(() => {
@@ -170,6 +174,39 @@ export function ImportPage() {
             {grammarMsg.text}・
             <Link className="underline" to={`/practice?decks=${grammarMsg.deckId}&mode=grammar`}>
               去練文法題
+            </Link>
+          </p>
+        )}
+      </section>
+
+      <section className="card space-y-3 p-5">
+        <h2 className="font-bold">內建練習題庫</h2>
+        <p className="text-sm text-muted">每個題庫會變成一個單字庫，有自己的複習排程和錯題本。重複加入只會補上新的項目，進度不受影響。變化規則在「講解」頁。</p>
+        {DRILL_SETS.map((s) => (
+          <div key={s.id} className="flex flex-wrap items-center justify-between gap-2">
+            <span>
+              {s.name}（{s.words.length} 個）
+              <span className="block text-xs text-muted">{s.desc}</span>
+            </span>
+            <button
+              className="btn-secondary"
+              data-testid={'add-drill-' + s.id}
+              disabled={drillBusy}
+              onClick={async () => {
+                setDrillBusy(true)
+                const r = await addDrillSet(s.id).finally(() => setDrillBusy(false))
+                setDrillMsg({ deckId: r.deckId, mode: s.mode, text: r.added || r.merged ? `「${s.name}」已加入 ${r.added + r.merged} 個` : `「${s.name}」已經加入過了，沒有新的項目` })
+              }}
+            >
+              加入
+            </button>
+          </div>
+        ))}
+        {drillMsg && (
+          <p className="text-sm" role="status" data-testid="drill-msg">
+            {drillMsg.text}・
+            <Link className="underline" to={`/practice?decks=${drillMsg.deckId}&mode=${drillMsg.mode}`}>
+              去練習
             </Link>
           </p>
         )}

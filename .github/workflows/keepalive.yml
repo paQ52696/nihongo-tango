@@ -1,0 +1,26 @@
+# Supabase 免費專案一週沒有活動就會自動暫停（同步會失效，要到 Supabase 網站手動恢復）。
+# 這裡每 3 天自動查詢一次資料庫，讓專案保持「有在使用」。
+# 匿名身分沒有讀取權限（資料都受 RLS 保護），回應「permission denied」也代表查詢確實到了資料庫。
+# 需要的 repository secrets：VITE_SUPABASE_URL、VITE_SUPABASE_ANON_KEY（和部署用的相同）
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '17 3 */3 * *' # 每 3 天，台灣時間 11:17
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the database
+        env:
+          URL: ${{ secrets.VITE_SUPABASE_URL }}
+          KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then echo "沒有設定 Supabase，略過"; exit 0; fi
+          body=$(curl -sS -w '\n%{http_code}' "$URL/rest/v1/decks?select=id&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
+          code=$(echo "$body" | tail -n1)
+          echo "HTTP $code"
+          # 200＝查到；401／403 且是 42501＝資料庫回應了「沒有權限」，也算有活動
+          if [ "$code" = "200" ] || echo "$body" | grep -q '42501'; then echo "Supabase 有回應"; else echo "$body"; exit 1; fi

@@ -219,7 +219,7 @@ export function PracticeRunner({
       ? 'whitespace-pre-line text-xl leading-relaxed sm:text-2xl'
       : q.mode === 'cloze' || q.mode === 'particle' || q.mode === 'ja2zh' || q.mode === 'zh2ja' || q.mode === 'reorder'
         ? 'text-2xl leading-relaxed sm:text-3xl'
-        : q.mode === 'typing' || q.mode === 'kanji2meaning' || q.mode === 'conjugate'
+        : q.mode === 'typing' || q.mode === 'kanji2meaning' || q.mode === 'conjugate' || q.mode === 'adjective'
           ? 'text-4xl sm:text-5xl'
           : 'text-5xl sm:text-6xl'
 

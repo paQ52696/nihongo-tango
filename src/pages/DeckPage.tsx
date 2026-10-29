@@ -4,6 +4,7 @@ import { Download, FileDown, List, Pencil, Trash2 } from 'lucide-react'
 import { deckGlyph, tapeColor } from '../lib/deckStyle'
 import { useAppData } from '../hooks/useData'
 import { deleteDeck, updateDeck } from '../db/repo'
+import { practiceModeParam } from '../db/drills'
 import { DeckForm } from '../components/DeckForm'
 import { ConfirmButton, Empty, Modal, StatTile, pct, ProgressBar, MASTERY_COLORS } from '../components/ui'
 import { SectionMasteryList } from '../components/charts'
@@ -45,7 +46,7 @@ export function DeckPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="btn-primary" onClick={() => nav(`/practice?decks=${deck.id}`)}>
+            <button className="btn-primary" onClick={() => nav(`/practice?decks=${deck.id}${practiceModeParam(deck.id)}`)}>
               練習
             </button>
             <button className="btn-secondary" onClick={() => nav(`/exam?decks=${deck.id}`)}>

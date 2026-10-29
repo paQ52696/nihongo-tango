@@ -216,3 +216,155 @@ export function convertVerb(input: string, group?: 'I' | 'II' | 'III'): (VerbInf
   const vg: VerbGroup = group === 'I' ? 'godan' : group === 'II' ? 'ichidan' : group === 'III' ? (s.endsWith('くる') || s.endsWith('来る') ? 'kuru' : 'suru') : auto
   return { surface: s, dict: s, group: vg, guessed: !group }
 }
+
+// ---------- ない形、た形、辭書形（第 17、19 課以後；N5 必考） ----------
+
+const U_TO_A: Record<string, string> = { う: 'わ', く: 'か', ぐ: 'が', す: 'さ', つ: 'た', ぬ: 'な', ぶ: 'ば', む: 'ま', る: 'ら' }
+
+export function naiForm(v: Pick<VerbInfo, 'dict' | 'group'>): string {
+  const head = v.dict.slice(0, -1)
+  switch (v.group) {
+    case 'ichidan':
+      return head + 'ない'
+    case 'suru':
+      return v.dict.slice(0, -2) + 'しない'
+    case 'kuru':
+      return 'こない'
+    case 'godan':
+      if (v.dict === 'ある') return 'ない' // ある→ない（例外）
+      return head + U_TO_A[v.dict.slice(-1)] + 'ない'
+  }
+}
+
+/** た形＝て形的「て／で」換成「た／だ」 */
+export function taForm(v: Pick<VerbInfo, 'dict' | 'group'>): string {
+  const te = teForm(v)
+  return te.slice(0, -1) + (te.endsWith('で') ? 'だ' : 'た')
+}
+
+/** ます形的漢字寫法（書く→書きます、来る→来ます），講解頁與出題顯示用 */
+export function masuSurface(v: Pick<VerbInfo, 'surface' | 'dict' | 'group'>): string {
+  const s = v.surface
+  switch (v.group) {
+    case 'godan':
+      return U_TO_I[s.slice(-1)] ? s.slice(0, -1) + U_TO_I[s.slice(-1)] + 'ます' : masuForm(v)
+    case 'ichidan':
+      return s.slice(0, -1) + 'ます'
+    case 'suru':
+      return s.slice(0, -2) + 'します'
+    case 'kuru':
+      return s.endsWith('来る') ? s.slice(0, -2) + '来ます' : masuForm(v)
+  }
+}
+
+/** ない形的干擾選項：分組判斷錯誤（みらない／かえない）、う→あない、ある→あらない、する／来る 的錯誤 */
+export function naiDistractors(v: Pick<VerbInfo, 'dict' | 'group'>, rng: () => number): string[] {
+  const answer = naiForm(v)
+  const head = v.dict.slice(0, -1)
+  const ordered: string[] = []
+  switch (v.group) {
+    case 'godan':
+      if (v.dict === 'ある') ordered.push('あらない', 'ありない')
+      if (v.dict.endsWith('う')) ordered.push(head + 'あない')
+      ordered.push(masuStem(v) + 'ない', head + 'えない', v.dict + 'ない')
+      break
+    case 'ichidan':
+      ordered.push(head + 'らない', v.dict + 'ない', head + 'わない')
+      break
+    case 'suru':
+      ordered.push(v.dict.slice(0, -2) + 'さない', v.dict.slice(0, -2) + 'すない', v.dict.slice(0, -2) + 'しらない')
+      break
+    case 'kuru':
+      ordered.push('きない', 'くない', 'こらない')
+      break
+  }
+  const uniq = [...new Set(ordered)].filter((s) => s !== answer)
+  return [...uniq.slice(0, 2), ...shuffle(uniq.slice(2), rng)].slice(0, 3)
+}
+
+/** た形的干擾選項：沿用て形的錯誤（かきた／かった／かいだ） */
+export function taDistractors(v: Pick<VerbInfo, 'dict' | 'group'>, rng: () => number): string[] {
+  const answer = taForm(v)
+  const toTa = (te: string) => te.slice(0, -1) + (te.endsWith('で') ? 'だ' : 'た')
+  return [...new Set(teDistractors(v, rng).map(toTa))].filter((s) => s !== answer).slice(0, 3)
+}
+
+const E_TO_U: Record<string, string> = { え: 'う', け: 'く', げ: 'ぐ', せ: 'す', ぜ: 'ず', て: 'つ', で: 'づ', ね: 'ぬ', へ: 'ふ', べ: 'ぶ', ぺ: 'ぷ', め: 'む', れ: 'る' }
+
+/** 辭書形的干擾選項（從ます形變回來）：い段→う段 弄錯、II 類多加／少加 る */
+export function dictDistractors(v: Pick<VerbInfo, 'dict' | 'group'>, rng: () => number): string[] {
+  const answer = v.dict
+  const stem = masuStem(v)
+  const last = stem.slice(-1)
+  const base = v.dict.slice(0, -2)
+  const ordered: string[] =
+    v.group === 'godan'
+      ? [stem + 'る', stem.slice(0, -1) + 'う', stem + 'う', stem] // かえりる、かえう（當成 II 類或變錯段）
+      : v.group === 'ichidan'
+        ? [stem.slice(0, -1) + (I_TO_U[last] ?? E_TO_U[last] ?? ''), stem + 'りる', stem + 'う', stem.slice(0, -1) + 'る', stem.slice(0, -1) + (I_TO_U[last] ?? E_TO_U[last] ?? '') + 'る'] // たぶ、おく（當成 I 類）
+        : v.group === 'suru'
+          ? [base + 'しる', base + 'す', base + 'さる', base + 'しう']
+          : ['きる', 'こる', 'きくる']
+  const uniq = [...new Set(ordered)].filter((s) => s !== answer && s.length > 1)
+  return [...uniq.slice(0, 1), ...shuffle(uniq.slice(1), rng)].slice(0, 3)
+}
+
+export type VerbForm = 'masu' | 'te' | 'nai' | 'ta' | 'dict'
+
+export const VERB_FORMS: { id: VerbForm; label: string }[] = [
+  { id: 'masu', label: 'ます形' },
+  { id: 'te', label: 'て形' },
+  { id: 'nai', label: 'ない形' },
+  { id: 'ta', label: 'た形' },
+  { id: 'dict', label: '辭書形' },
+]
+
+export function verbForm(v: Pick<VerbInfo, 'dict' | 'group'>, form: VerbForm): string {
+  switch (form) {
+    case 'masu':
+      return masuForm(v)
+    case 'te':
+      return teForm(v)
+    case 'nai':
+      return naiForm(v)
+    case 'ta':
+      return taForm(v)
+    case 'dict':
+      return v.dict
+  }
+}
+
+export function verbDistractors(v: Pick<VerbInfo, 'dict' | 'group'>, form: VerbForm, rng: () => number): string[] {
+  switch (form) {
+    case 'masu':
+      return masuDistractors(v, rng)
+    case 'te':
+      return teDistractors(v, rng)
+    case 'nai':
+      return naiDistractors(v, rng)
+    case 'ta':
+      return taDistractors(v, rng)
+    case 'dict':
+      return dictDistractors(v, rng)
+  }
+}
+
+const TE_TO_TA: Record<string, string> = { って: 'った', んで: 'んだ', いて: 'いた', いで: 'いだ', して: 'した', 来て: '来た', '「て」': '「た」' }
+
+/** 每種變化用的規則（從ます形看，和課本教法一致） */
+export function formRule(v: Pick<VerbInfo, 'dict' | 'group'>, form: VerbForm): string {
+  const g = v.group
+  switch (form) {
+    case 'te':
+      return teRule(v)
+    case 'ta':
+      return teRule(v).replace(/(って|んで|いて|いで|して|来て|「て」)$/, (m) => TE_TO_TA[m])
+    case 'masu':
+      return g === 'godan' ? '第 I 類：う段 → い段＋ます' : g === 'ichidan' ? '第 II 類：去掉「る」加「ます」' : g === 'suru' ? '第 III 類：する → します' : '第 III 類：来る → 来ます'
+    case 'nai':
+      if (v.dict === 'ある') return '例外：ある → ない'
+      return g === 'godan' ? '第 I 類：い段 → あ段＋ない（い → わ）' : g === 'ichidan' ? '第 II 類：去掉「ます」加「ない」' : g === 'suru' ? '第 III 類：します → しない' : '第 III 類：来ます → 来ない（こない）'
+    case 'dict':
+      return g === 'godan' ? '第 I 類：い段 → う段' : g === 'ichidan' ? '第 II 類：去掉「ます」加「る」' : g === 'suru' ? '第 III 類：します → する' : '第 III 類：来ます → 来る（くる）'
+  }
+}

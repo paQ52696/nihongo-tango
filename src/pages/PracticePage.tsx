@@ -6,7 +6,9 @@ import { ScopePicker, parseScope, type ScopeValue } from '../components/ScopePic
 import { PracticeRunner, type AnswerRecord } from '../components/PracticeRunner'
 import { Empty, PageTitle, Segmented, Toggle } from '../components/ui'
 import { selectCards } from '../lib/session'
-import { buildQuestion, canAsk, MODE_GROUPS, MODE_LABELS, type Question } from '../lib/questions'
+import { buildQuestion, canAsk, MODE_GROUPS, MODE_LABELS, type FormChoice, type Question } from '../lib/questions'
+import { VERB_FORMS, type VerbForm } from '../lib/conjugate'
+import { ADJ_FORMS, type AdjForm } from '../lib/adjective'
 import { buildKanjiDict, makeRng, shuffle } from '../lib/distractors'
 import { ERROR_LABELS } from '../lib/errorTypes'
 import { audioSupported, canSpeakJapanese, onVoicesChanged } from '../lib/browser'
@@ -20,7 +22,9 @@ const NEED: Partial<Record<QuestionMode, string>> = {
   kanji2reading: '（需要有漢字的單字）',
   reading2kanji: '（需要有漢字的單字）',
   cloze: '（需要有例句的單字）',
-  conjugate: '（需要詞性是「動詞」的單字）',
+  conjugate: '（需要詞性是「動詞」的單字，或到「匯入」頁加入內建的動詞變化題庫）',
+  adjective: '（需要詞性是「い形容詞」「な形容詞」的單字，或到「匯入」頁加入內建的形容詞變化題庫）',
+  counter: '（到「匯入」頁加入內建的數字・時間・量詞題庫）',
   ja2zh: '（需要先匯入課文句子）',
   zh2ja: '（需要先匯入課文句子）',
   reorder: '（需要先匯入有分文節的課文句子）',
@@ -51,14 +55,14 @@ export function countEligible(data: AppData, v: ScopeValue, mode: QuestionMode):
 }
 
 /** 出題。random=true 時完全隨機抽（模擬考），否則到期的複習卡優先 */
-export function buildQuestions(data: AppData, v: ScopeValue, mode: QuestionMode, count: number, opts: { seed?: number; onlyCards?: Set<string>; random?: boolean } = {}): Question[] {
+export function buildQuestions(data: AppData, v: ScopeValue, mode: QuestionMode, count: number, opts: { seed?: number; onlyCards?: Set<string>; random?: boolean; forms?: FormChoice } = {}): Question[] {
   const rng = makeRng(opts.seed ?? Date.now())
   const selected = opts.random ? shuffle(selectFor(data, v, mode, 100000, rng, opts.onlyCards), rng).slice(0, count) : selectFor(data, v, mode, count, rng, opts.onlyCards)
   // 干擾選項與讀音字典只用單字（不含課文句子、文法點）
   const vocab = data.words.filter((w) => !w.kind)
   const dict = buildKanjiDict(vocab)
   const context = sentenceContext(data, v.deckIds)
-  return selected.map((c) => buildQuestion(mode, c, data.wordById.get(c.wordId)!, vocab, rng, dict, { context: context.get(c.deckId + '|' + c.wordId) }))
+  return selected.map((c) => buildQuestion(mode, c, data.wordById.get(c.wordId)!, vocab, rng, dict, { context: context.get(c.deckId + '|' + c.wordId), ...opts.forms }))
 }
 
 /** 課文句子的上一句（同一個單字庫、同一課，依匯入順序），中翻日／日翻中時當作對話提示 */
@@ -80,6 +84,48 @@ function sentenceContext(data: AppData, deckIds: string[]): Map<string, string> 
   return out
 }
 
+const FORMS_KEY = 'practice-forms'
+const ALL_FORMS: Required<FormChoice> = { verbForms: VERB_FORMS.map((f) => f.id), adjForms: ADJ_FORMS.map((f) => f.id) }
+
+/** 上次勾選的變化形（只存在這台裝置） */
+function loadForms(): Required<FormChoice> {
+  try {
+    const v = JSON.parse(localStorage.getItem(FORMS_KEY) ?? 'null')
+    const pick = <T extends string>(saved: unknown, all: T[]): T[] => {
+      const list = Array.isArray(saved) ? all.filter((f) => saved.includes(f)) : []
+      return list.length ? list : all
+    }
+    return { verbForms: pick(v?.verbForms, ALL_FORMS.verbForms), adjForms: pick(v?.adjForms, ALL_FORMS.adjForms) }
+  } catch {
+    return ALL_FORMS
+  }
+}
+
+/** 要練哪些變化形：至少留一個 */
+function FormPicker<T extends string>({ title, all, value, onChange }: { title: string; all: { id: T; label: string }[]; value: T[]; onChange: (v: T[]) => void }) {
+  return (
+    <div className="mt-3" role="group" aria-label={title}>
+      <p className="mb-1 text-xs font-semibold text-muted">{title}（可複選）</p>
+      <div className="flex flex-wrap gap-2">
+        {all.map((f) => {
+          const on = value.includes(f.id)
+          return (
+            <button
+              key={f.id}
+              aria-pressed={on}
+              data-testid={'form-' + f.id}
+              onClick={() => (on ? value.length > 1 && onChange(value.filter((x) => x !== f.id)) : onChange(all.map((x) => x.id).filter((x) => x === f.id || value.includes(x))))}
+              className={`jp min-h-11 rounded-full border-[1.5px] px-3.5 text-sm transition-colors ${on ? 'border-ink bg-ink font-bold text-surface' : 'border-line-soft bg-surface hover:border-ink'}`}
+            >
+              {f.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function PracticePage() {
   const data = useAppData()
   const settings = useSettings()
@@ -92,6 +138,17 @@ export function PracticePage() {
   const [result, setResult] = useState<AnswerRecord[] | null>(null)
   const [voiceOk, setVoiceOk] = useState(canSpeakJapanese())
   const [frozenCards, setFrozenCards] = useState<Map<string, Card>>(new Map())
+  const [forms, setFormsState] = useState(loadForms)
+  // 使用者自己點過題型後，就不再自動換題型
+  const [modePicked, setModePicked] = useState(!!params.get('mode'))
+  const setForms = (next: Required<FormChoice>) => {
+    setFormsState(next)
+    try {
+      localStorage.setItem(FORMS_KEY, JSON.stringify(next))
+    } catch {
+      // 無痕模式等存不了就算了
+    }
+  }
 
   useEffect(() => onVoicesChanged(() => setVoiceOk(canSpeakJapanese())), [])
   useEffect(() => {
@@ -109,12 +166,19 @@ export function PracticePage() {
   }, [data, scope])
   const eligibleCount = counts?.get(mode) ?? 0
 
+  // 選的單字庫出不了目前的題型（例如只選了動詞變化題庫）：自動換成第一個有題目的題型
+  useEffect(() => {
+    if (!counts || modePicked || (counts.get(mode) ?? 0) > 0) return
+    const next = MODES.find((m) => (counts.get(m) ?? 0) > 0)
+    if (next) setMode(next)
+  }, [counts]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!data || !scope) return null
   const s: Settings = settings ?? ({ ...DEFAULT_SETTINGS, updated_at: '' } as Settings)
 
   function start(onlyCards?: Set<string>) {
     if (!data || !scope) return
-    const qs = buildQuestions(data, scope, mode, onlyCards ? onlyCards.size : count, { onlyCards })
+    const qs = buildQuestions(data, scope, mode, onlyCards ? onlyCards.size : count, { onlyCards, forms })
     setFrozenCards(new Map(data.cards.map((c) => [c.id, c])))
     setResult(null)
     setQuestions(qs)
@@ -207,7 +271,7 @@ export function PracticePage() {
                         role="radio"
                         aria-checked={mode === m}
                         disabled={disabled}
-                        onClick={() => setMode(m)}
+                        onClick={() => (setMode(m), setModePicked(true))}
                         data-testid={'mode-' + m}
                         className={`min-h-11 rounded-xl border-[1.5px] px-3 py-2 text-left text-sm transition-colors disabled:opacity-40 ${mode === m ? 'border-ink bg-ink font-bold text-surface' : 'border-line-soft bg-surface hover:border-ink'} ${n === 0 && mode !== m ? 'opacity-50' : ''}`}
                       >
@@ -221,6 +285,8 @@ export function PracticePage() {
               </div>
             ))}
           </div>
+          {mode === 'conjugate' && <FormPicker title="要練的動詞變化" all={VERB_FORMS} value={forms.verbForms} onChange={(v: VerbForm[]) => setForms({ ...forms, verbForms: v })} />}
+          {mode === 'adjective' && <FormPicker title="要練的形容詞變化" all={ADJ_FORMS} value={forms.adjForms} onChange={(v: AdjForm[]) => setForms({ ...forms, adjForms: v })} />}
           {audioSupported() && !voiceOk && (
             <p className="mt-2 text-xs text-accent" data-testid="no-ja-voice">
               這台裝置沒有日文語音，所以不會發音（避免用中文語音唸錯）{mode === 'listening' && '，「聽音選字」也無法使用'}。安裝方式見「設定 → 發音」。

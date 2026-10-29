@@ -4,6 +4,7 @@ import { ArrowRight, CalendarDays, Download, Plus } from 'lucide-react'
 import { SpeakButton } from '../components/SpeakButton'
 import { useAppData, useSettings, type DeckStats } from '../hooks/useData'
 import { createDeck, updateDeck } from '../db/repo'
+import { practiceModeParam } from '../db/drills'
 import { DeckForm } from '../components/DeckForm'
 import { Modal, pct } from '../components/ui'
 import { computeStreak, dailyCounts } from '../lib/stats'
@@ -78,7 +79,7 @@ export function HomePage() {
         ) : (
           <div className="grid gap-x-[22px] gap-y-7 pt-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
             {data.decks.map((d, i) => (
-              <DeckCard key={d.id} deck={d} stats={data.deckStats.get(d.id)!} index={i} onPractice={() => nav(`/practice?decks=${d.id}&scope=due`)} onEditExam={() => setEditing(d)} />
+              <DeckCard key={d.id} deck={d} stats={data.deckStats.get(d.id)!} index={i} onPractice={() => nav(`/practice?decks=${d.id}&scope=due${practiceModeParam(d.id)}`)} onEditExam={() => setEditing(d)} />
             ))}
           </div>
         )}

@@ -13,7 +13,9 @@ import {
 } from './distractors'
 import { hasKanji, normalizeReading, readingAlternatives, splitSuffix, kataToHira, anyToHiragana } from './kana'
 import { canReorder, particleQuestion, particleSlots, reorderTiles, shuffleTiles } from './sentences'
-import { GROUP_LABELS, masuDistractors, masuForm, teDistractors, teForm, verbInfo } from './conjugate'
+import { GROUP_LABELS, formRule, masuForm, masuSurface, verbDistractors, verbForm, verbInfo, VERB_FORMS, type VerbForm } from './conjugate'
+import { ADJ_FORMS, adjDistractors, adjForm, adjInfo, adjRule, type AdjForm } from './adjective'
+import { counterDistractors, counterExplain, counterItem, pickEntry } from './counters'
 import { grammarPoint } from '../data/grammar'
 
 export const MODE_LABELS: Record<QuestionMode, string> = {
@@ -23,19 +25,23 @@ export const MODE_LABELS: Record<QuestionMode, string> = {
   typing: '中文 → 日文（打字）',
   listening: '聽音選字',
   cloze: '例句填空',
-  conjugate: '動詞變化（て形・ます形）',
+  conjugate: '動詞變化',
+  adjective: '形容詞變化',
   ja2zh: '日翻中',
   zh2ja: '中翻日（打字）',
   reorder: '語順重組',
   particle: '助詞填空',
   grammar: '文法題',
+  counter: '數字・時間・量詞',
 }
 
 /** 練習頁的題型分組 */
 export const MODE_GROUPS: { title: string; modes: QuestionMode[] }[] = [
-  { title: '單字', modes: ['kanji2reading', 'reading2kanji', 'kanji2meaning', 'typing', 'listening', 'cloze', 'conjugate'] },
+  { title: '單字', modes: ['kanji2reading', 'reading2kanji', 'kanji2meaning', 'typing', 'listening', 'cloze'] },
+  { title: '詞形變化', modes: ['conjugate', 'adjective'] },
   { title: '課文句子', modes: ['zh2ja', 'ja2zh', 'reorder', 'particle'] },
   { title: '文法', modes: ['grammar'] },
+  { title: '數字・量詞', modes: ['counter'] },
 ]
 
 /** 作答方式：選擇題以外的題型要不同的畫面 */
@@ -49,11 +55,13 @@ export const INTERACTION: Record<QuestionMode, Interaction> = {
   listening: 'choice',
   cloze: 'choice',
   conjugate: 'choice',
+  adjective: 'choice',
   ja2zh: 'reveal',
   zh2ja: 'sentence',
   reorder: 'reorder',
   particle: 'choice',
   grammar: 'choice',
+  counter: 'choice',
 }
 
 export const MODE_HINTS: Record<QuestionMode, string> = {
@@ -64,11 +72,13 @@ export const MODE_HINTS: Record<QuestionMode, string> = {
   listening: '聽發音，選出正確的讀音',
   cloze: '選出填入空格的單字（原形）',
   conjugate: '選出正確的變化形',
+  adjective: '選出正確的變化形',
   ja2zh: '先在心裡（或紙上）翻成中文，再看答案自評',
   zh2ja: '打出課本的日文原句（羅馬拼音會轉成假名，漢字用輸入法）',
   reorder: '依序點選字卡，排出正確的日文句子',
   particle: '選出填入（　）的助詞',
   grammar: '選出最適合的答案',
+  counter: '選出正確的念法',
 }
 
 export interface Question {
@@ -128,6 +138,8 @@ export function canAsk(mode: QuestionMode, word: Word): boolean {
     }
   }
   if (word.kind === 'grammar') return mode === 'grammar' && !!grammarPoint(word.grammarId)?.questions.length
+  if (word.kind === 'counter') return mode === 'counter' && !!counterItem(word.counterId)?.entries.length
+  if (word.kind) return false
   const hasK = !!word.kanji && hasKanji(displaySurface(word))
   switch (mode) {
     case 'kanji2reading':
@@ -142,14 +154,24 @@ export function canAsk(mode: QuestionMode, word: Word): boolean {
       return clozeSentence(word) !== null
     case 'conjugate':
       return verbInfo(word) !== null
+    case 'adjective':
+      return adjInfo(word) !== null
     default:
       return false
   }
 }
 
+/** 出題時要練哪些變化形（練習頁可以勾選）；沒指定時動詞只問て形・ます形，形容詞全部 */
+export interface FormChoice {
+  verbForms?: VerbForm[]
+  adjForms?: AdjForm[]
+}
+
+export const DEFAULT_VERB_FORMS: VerbForm[] = ['te', 'masu']
+
 let qid = 0
 
-export function buildQuestion(mode: QuestionMode, card: Pick<Card, 'id' | 'deckId' | 'wordId'>, word: Word, pool: Word[], rng: () => number, dict: KanjiDict, ctx: { context?: string } = {}): Question {
+export function buildQuestion(mode: QuestionMode, card: Pick<Card, 'id' | 'deckId' | 'wordId'>, word: Word, pool: Word[], rng: () => number, dict: KanjiDict, ctx: { context?: string } & FormChoice = {}): Question {
   const surface = displaySurface(word)
   const reading = primaryReading(word.reading)
   const core = splitSuffix(reading).core
@@ -191,17 +213,51 @@ export function buildQuestion(mode: QuestionMode, card: Pick<Card, 'id' | 'deckI
     }
     case 'conjugate': {
       const v = verbInfo(word)!
-      // 單字庫存ます形（課本寫法）時一律問て形；存辭書形時 7 成問て形、3 成問ます形
-      const te = v.masu ? true : rng() < 0.7
-      const answer = te ? teForm(v) : masuForm(v)
-      const shown = v.masu ?? { surface: v.surface, reading: v.dict }
+      // 題目給單字庫存的形（課本寫ます形、N5 寫辭書形），問其他形；要問的剛好是存的形時，改給另一個（ます形↔辭書形）
+      const stored: VerbForm = v.masu ? 'masu' : 'dict'
+      const wanted = ctx.verbForms?.length ? ctx.verbForms : DEFAULT_VERB_FORMS
+      const others = wanted.filter((f) => f !== stored)
+      const forms = others.length ? others : wanted
+      const form = forms[Math.floor(rng() * forms.length)]
+      const showMasu = form === 'dict' || (stored === 'masu' && form !== 'masu')
+      const shown = showMasu ? (v.masu ?? { surface: masuSurface(v), reading: masuForm(v) }) : { surface: v.surface, reading: v.dict }
+      const answer = verbForm(v, form)
       return {
         ...base,
         prompt: shown.surface === shown.reading ? shown.reading : `${shown.surface}（${shown.reading}）`,
-        promptSub: te ? '→ て形' : '→ ます形',
+        promptSub: '→ ' + VERB_FORMS.find((f) => f.id === form)!.label,
         answer,
-        options: withAnswer(answer, plain(te ? teDistractors(v, rng) : masuDistractors(v, rng))),
-        explain: v.masu ? `${GROUP_LABELS[v.group]}：${v.masu.reading} → ${teForm(v)}` : `${GROUP_LABELS[v.group]}：${v.dict} → ${masuForm(v)}・${teForm(v)}`,
+        options: withAnswer(answer, plain(verbDistractors(v, form, rng))),
+        explain: `${GROUP_LABELS[v.group]}・${formRule(v, form)}\n${shown.reading} → ${answer}`,
+      }
+    }
+    case 'adjective': {
+      const a = adjInfo(word)!
+      const forms = ctx.adjForms?.length ? ctx.adjForms : ADJ_FORMS.map((f) => f.id)
+      const form = forms[Math.floor(rng() * forms.length)]
+      const answer = adjForm(a, form)
+      return {
+        ...base,
+        prompt: a.surface === a.reading ? a.reading : `${a.surface}（${a.reading}）`,
+        promptSub: '→ ' + ADJ_FORMS.find((f) => f.id === form)!.label,
+        answer,
+        options: withAnswer(answer, plain(adjDistractors(a, form, rng))),
+        explain: `${adjRule(a, form)}\n${a.reading} → ${answer}`,
+      }
+    }
+    case 'counter': {
+      const item = counterItem(word.counterId)!
+      const e = pickEntry(item, rng)
+      return {
+        ...base,
+        // 作答後顯示、重播發音都用這一題的數字（6本 ろっぽん），不是卡片名稱（〜本）
+        word: { ...word, kanji: e.label, reading: e.reading },
+        speak: e.reading,
+        prompt: e.label,
+        promptSub: item.hint,
+        answer: e.reading,
+        options: withAnswer(e.reading, plain(counterDistractors(item, e, rng))),
+        explain: counterExplain(item, e),
       }
     }
     case 'ja2zh':
