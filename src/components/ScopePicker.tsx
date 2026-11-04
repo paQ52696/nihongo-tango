@@ -8,9 +8,10 @@ export interface ScopeValue {
   scope: Scope
 }
 
-export function parseScope(params: URLSearchParams, data: AppData): ScopeValue {
+/** emptyDecks：網址沒帶任何設定時單字庫都不預選（練習頁）；否則全選 */
+export function parseScope(params: URLSearchParams, data: AppData, emptyDecks = false): ScopeValue {
   const ids = (params.get('decks') ?? '').split(',').filter((id) => data.deckById.has(id))
-  const deckIds = ids.length ? ids : data.decks.map((d) => d.id)
+  const deckIds = ids.length ? ids : emptyDecks && ![...params.keys()].length ? [] : data.decks.map((d) => d.id)
   const list = (k: string) => (params.get(k) ?? '').split(',').filter(Boolean)
   let scope: Scope = { kind: 'all' }
   switch (params.get('scope')) {

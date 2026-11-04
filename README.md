@@ -105,6 +105,8 @@ python scripts/convert_doc.py data/期中考.docx -o data/out/midterm.csv
    npm run gen-audio -- data/out/n5.json
    ```
    期中考等在 App 裡匯入的單字：先到「設定 → 匯出備份」，再 `npm run gen-audio -- 備份檔.json`
+   匯入用的 CSV／Excel（課文句子也可以）直接給檔案：`npm run gen-audio -- data/midterm/sentences13-16.csv`
+   內建題庫（動詞、形容詞變化、數字・量詞每個讀法）：`npm run gen-audio -- --builtin`
 3. commit 並 push `public/audio/`，網站就會更新
 
 - 換聲音：`--speaker 四国めたん --style あまあま --force`（`--force` 會全部重新產生）

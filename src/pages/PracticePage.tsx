@@ -84,24 +84,7 @@ function sentenceContext(data: AppData, deckIds: string[]): Map<string, string> 
   return out
 }
 
-const FORMS_KEY = 'practice-forms'
-const ALL_FORMS: Required<FormChoice> = { verbForms: VERB_FORMS.map((f) => f.id), adjForms: ADJ_FORMS.map((f) => f.id) }
-
-/** 上次勾選的變化形（只存在這台裝置） */
-function loadForms(): Required<FormChoice> {
-  try {
-    const v = JSON.parse(localStorage.getItem(FORMS_KEY) ?? 'null')
-    const pick = <T extends string>(saved: unknown, all: T[]): T[] => {
-      const list = Array.isArray(saved) ? all.filter((f) => saved.includes(f)) : []
-      return list.length ? list : all
-    }
-    return { verbForms: pick(v?.verbForms, ALL_FORMS.verbForms), adjForms: pick(v?.adjForms, ALL_FORMS.adjForms) }
-  } catch {
-    return ALL_FORMS
-  }
-}
-
-/** 要練哪些變化形：至少留一個 */
+/** 要練哪些變化形（預設都不選，開始前至少選一個） */
 function FormPicker<T extends string>({ title, all, value, onChange }: { title: string; all: { id: T; label: string }[]; value: T[]; onChange: (v: T[]) => void }) {
   return (
     <div className="mt-3" role="group" aria-label={title}>
@@ -114,7 +97,7 @@ function FormPicker<T extends string>({ title, all, value, onChange }: { title: 
               key={f.id}
               aria-pressed={on}
               data-testid={'form-' + f.id}
-              onClick={() => (on ? value.length > 1 && onChange(value.filter((x) => x !== f.id)) : onChange(all.map((x) => x.id).filter((x) => x === f.id || value.includes(x))))}
+              onClick={() => onChange(on ? value.filter((x) => x !== f.id) : all.map((x) => x.id).filter((x) => x === f.id || value.includes(x)))}
               className={`jp min-h-11 rounded-full border-[1.5px] px-3.5 text-sm transition-colors ${on ? 'border-ink bg-ink font-bold text-surface' : 'border-line-soft bg-surface hover:border-ink'}`}
             >
               {f.label}
@@ -131,28 +114,19 @@ export function PracticePage() {
   const settings = useSettings()
   const [params] = useSearchParams()
   const [scope, setScope] = useState<ScopeValue | null>(null)
-  const [mode, setMode] = useState<QuestionMode>((params.get('mode') as QuestionMode) || 'kanji2reading')
+  // 直接打開練習頁時題型不預選；錯題本的「一鍵練習」沒帶題型，沿用讀音題
+  const [mode, setMode] = useState<QuestionMode | null>((params.get('mode') as QuestionMode) || (params.get('autostart') === '1' ? 'kanji2reading' : null))
   const [count, setCount] = useState(Number(params.get('count')) || 20)
   const [timed, setTimed] = useState(false)
   const [questions, setQuestions] = useState<Question[] | null>(null)
   const [result, setResult] = useState<AnswerRecord[] | null>(null)
   const [voiceOk, setVoiceOk] = useState(canSpeakJapanese())
   const [frozenCards, setFrozenCards] = useState<Map<string, Card>>(new Map())
-  const [forms, setFormsState] = useState(loadForms)
-  // 使用者自己點過題型後，就不再自動換題型
-  const [modePicked, setModePicked] = useState(!!params.get('mode'))
-  const setForms = (next: Required<FormChoice>) => {
-    setFormsState(next)
-    try {
-      localStorage.setItem(FORMS_KEY, JSON.stringify(next))
-    } catch {
-      // 無痕模式等存不了就算了
-    }
-  }
+  const [forms, setForms] = useState<Required<FormChoice>>({ verbForms: [], adjForms: [] })
 
   useEffect(() => onVoicesChanged(() => setVoiceOk(canSpeakJapanese())), [])
   useEffect(() => {
-    if (data && !scope) setScope(parseScope(params, data))
+    if (data && !scope) setScope(parseScope(params, data, true))
   }, [data, scope, params])
   // 網址帶 autostart=1 時直接開始（例如錯題本的「一鍵練習」）
   useEffect(() => {
@@ -164,20 +138,14 @@ export function PracticePage() {
     if (!data || !scope) return null
     return new Map(MODES.map((m) => [m, countEligible(data, scope, m)]))
   }, [data, scope])
-  const eligibleCount = counts?.get(mode) ?? 0
-
-  // 選的單字庫出不了目前的題型（例如只選了動詞變化題庫）：自動換成第一個有題目的題型
-  useEffect(() => {
-    if (!counts || modePicked || (counts.get(mode) ?? 0) > 0) return
-    const next = MODES.find((m) => (counts.get(m) ?? 0) > 0)
-    if (next) setMode(next)
-  }, [counts]) // eslint-disable-line react-hooks/exhaustive-deps
+  const eligibleCount = (mode && counts?.get(mode)) || 0
+  const needForms = (mode === 'conjugate' && !forms.verbForms.length) || (mode === 'adjective' && !forms.adjForms.length)
 
   if (!data || !scope) return null
   const s: Settings = settings ?? ({ ...DEFAULT_SETTINGS, updated_at: '' } as Settings)
 
   function start(onlyCards?: Set<string>) {
-    if (!data || !scope) return
+    if (!data || !scope || !mode) return
     const qs = buildQuestions(data, scope, mode, onlyCards ? onlyCards.size : count, { onlyCards, forms })
     setFrozenCards(new Map(data.cards.map((c) => [c.id, c])))
     setResult(null)
@@ -271,7 +239,7 @@ export function PracticePage() {
                         role="radio"
                         aria-checked={mode === m}
                         disabled={disabled}
-                        onClick={() => (setMode(m), setModePicked(true))}
+                        onClick={() => setMode(m)}
                         data-testid={'mode-' + m}
                         className={`min-h-11 rounded-xl border-[1.5px] px-3 py-2 text-left text-sm transition-colors disabled:opacity-40 ${mode === m ? 'border-ink bg-ink font-bold text-surface' : 'border-line-soft bg-surface hover:border-ink'} ${n === 0 && mode !== m ? 'opacity-50' : ''}`}
                       >
@@ -310,14 +278,24 @@ export function PracticePage() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-4">
           <p className="text-sm text-muted" data-testid="eligible-count">
-            可出題：{eligibleCount} 題{eligibleCount < count && eligibleCount > 0 && `（不足 ${count} 題，會全部出）`}
+            {!scope.deckIds.length ? (
+              '先選單字庫'
+            ) : !mode ? (
+              '再選題型'
+            ) : needForms ? (
+              '選要練的變化形'
+            ) : (
+              <>
+                可出題：{eligibleCount} 題{eligibleCount < count && eligibleCount > 0 && `（不足 ${count} 題，會全部出）`}
+              </>
+            )}
           </p>
-          <button className="btn-primary px-6 py-2.5 text-base" disabled={!scope.deckIds.length || eligibleCount === 0} onClick={() => start()} data-testid="start-practice">
+          <button className="btn-primary px-6 py-2.5 text-base" disabled={!scope.deckIds.length || !mode || needForms || eligibleCount === 0} onClick={() => start()} data-testid="start-practice">
             開始練習
             <ArrowRight size={18} aria-hidden />
           </button>
         </div>
-        {eligibleCount === 0 && scope.deckIds.length > 0 && (
+        {mode && eligibleCount === 0 && scope.deckIds.length > 0 && (
           <p className="text-sm text-accent">
             這個範圍沒有可以出「{MODE_LABELS[mode]}」的題目{NEED[mode] ?? ''}。
             {scope.scope.kind === 'due' && ' 今天的複習都完成了！'}

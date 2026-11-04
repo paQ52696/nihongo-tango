@@ -3,6 +3,8 @@
 // 用法（先打開 VOICEVOX，讓引擎在 http://127.0.0.1:50021 執行）：
 //   npm run gen-audio -- data/out/n5.json                 ← import_pdf.py 轉出的 JSON
 //   npm run gen-audio -- 備份檔.json                       ← App「設定 → 匯出備份」的檔案（含期中考等所有單字庫）
+//   npm run gen-audio -- data/midterm/sentences13-16.csv   ← 匯入頁用的 CSV／Excel（課文句子也可以）
+//   npm run gen-audio -- --builtin                        ← 內建題庫（動詞、形容詞變化、數字・量詞的每個讀法）
 //   選項：--speaker 四国めたん --style ノーマル --force（重新產生已存在的檔案）
 //
 // 已經產生過的字會跳過，所以新增單字後重跑一次即可。
@@ -12,6 +14,9 @@ import { Mp3Encoder } from '@breezystack/lamejs'
 import { audioKey, speakTextFor } from '../src/lib/audioKey'
 import { displaySurface } from '../src/lib/distractors'
 import { hasKanji } from '../src/lib/kana'
+import { guessKind, guessMapping, parseFile, rowsToDrafts } from '../src/lib/importer'
+import { DRILL_SETS } from '../src/data/drills'
+import { COUNTERS } from '../src/data/counters'
 
 const ENGINE = process.env.VOICEVOX_URL || 'http://127.0.0.1:50021'
 const OUT = 'public/audio'
@@ -23,15 +28,16 @@ type W = { kanji: string; reading: string }
 
 function parseArgs() {
   const args = process.argv.slice(2)
-  const opt = { files: [] as string[], speaker: '四国めたん', style: 'ノーマル', force: false }
+  const opt = { files: [] as string[], speaker: '四国めたん', style: 'ノーマル', force: false, builtin: false }
   for (let i = 0; i < args.length; i++) {
     const a = args[i]
     if (a === '--speaker') opt.speaker = args[++i]
     else if (a === '--style') opt.style = args[++i]
     else if (a === '--force') opt.force = true
+    else if (a === '--builtin') opt.builtin = true
     else opt.files.push(a)
   }
-  if (!opt.files.length) {
+  if (!opt.files.length && !opt.builtin) {
     console.error('請指定單字檔，例如：npm run gen-audio -- data/out/n5.json')
     process.exit(1)
   }
@@ -40,9 +46,24 @@ function parseArgs() {
 
 /** 讀入 import JSON（{ words: [...] } 或陣列）或 App 的備份檔（{ tables: { words } }） */
 function loadWords(file: string): W[] {
+  // CSV／Excel：和匯入頁同一套解析，算出來的檔名才會和 App 一致
+  if (/[.](csv|tsv|txt|xlsx)$/i.test(file)) {
+    const buf = readFileSync(file)
+    const table = parseFile(file, buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length))
+    return rowsToDrafts(table, guessMapping(table.headers), guessKind(table))
+      .filter((d) => d.reading || d.kanji)
+      .map((d) => ({ kanji: d.kanji, reading: d.reading || d.kanji }))
+  }
   const j = JSON.parse(readFileSync(file, 'utf8').replace(/^﻿/, ''))
   const list: any[] = Array.isArray(j) ? j : (j.tables?.words ?? j.words ?? [])
   return list.filter((w) => w && !w.deleted && w.reading).map((w) => ({ kanji: w.kanji ?? '', reading: w.reading }))
+}
+
+/** 內建題庫：動詞、形容詞變化的單字，以及數字・量詞題目會唸的每個讀法（例如「3本」さんぼん） */
+function builtinWords(): W[] {
+  const words: W[] = DRILL_SETS.filter((s) => s.id !== 'counters').flatMap((s) => s.words.map((w) => ({ kanji: w.kanji, reading: w.reading })))
+  for (const c of COUNTERS) for (const e of c.entries) words.push({ kanji: e.label, reading: e.reading })
+  return words
 }
 
 async function api(path: string, init?: RequestInit) {
@@ -137,6 +158,7 @@ async function main() {
   // 同一個字在多個檔案或單字庫裡出現只做一次
   const todo = new Map<string, W>()
   for (const f of opt.files) for (const w of loadWords(f)) todo.set(audioKey(w), w)
+  if (opt.builtin) for (const w of builtinWords()) todo.set(audioKey(w), w)
 
   let made = 0
   let skipped = 0

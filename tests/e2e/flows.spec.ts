@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { answerRound, evalDb, fixture, importFile, N5_FILE, openApp, startPractice } from './helpers'
+import { answerRound, evalDb, fixture, importFile, N5_FILE, openApp, setupPractice, startPractice } from './helpers'
 
 test('匯入 N5 資料 → 選頁數範圍 → 完成一輪練習 → 錯題出現在錯題本 → 統計更新', async ({ page }) => {
   test.setTimeout(240_000)
@@ -144,6 +144,7 @@ test('其他題型都能作答（讀音→漢字、意思、打字、例句填�
   for (const mode of ['讀音 → 漢字', '漢字 → 中文意思', '例句填空']) {
     await page.goto('/#/')
     await page.goto('/#/practice')
+    await setupPractice(page)
     await page.getByRole('radio', { name: mode }).click()
     await page.getByRole('radio', { name: '10 題' }).click()
     await page.getByTestId('start-practice').click()
@@ -153,6 +154,7 @@ test('其他題型都能作答（讀音→漢字、意思、打字、例句填�
   // 打字：羅馬拼音即時轉假名
   await page.goto('/#/')
   await page.goto('/#/practice')
+  await setupPractice(page)
   await page.getByRole('radio', { name: '中文 → 日文（打字）' }).click()
   await page.getByTestId('start-practice').click()
   const input = page.getByTestId('typing-input')

@@ -1,6 +1,6 @@
 // 每個主要頁面 × 桌機／手機寬度 × 淺色／深色 截圖（存到 screenshots/），並檢查沒有水平捲軸（排版跑掉）
 import { test, expect, type Page } from '@playwright/test'
-import { answerRound, fixture, openApp, startPractice } from './helpers'
+import { answerRound, fixture, openApp, setupPractice, startPractice } from './helpers'
 
 const VIEWPORTS = { desktop: { width: 1280, height: 800 }, mobile: { width: 390, height: 844 } } as const
 const SCHEMES = ['light', 'dark'] as const
@@ -39,6 +39,7 @@ for (const [vpName, viewport] of Object.entries(VIEWPORTS)) {
 
       await page.goto('/#/practice')
       await expect(page.getByTestId('start-practice')).toBeVisible()
+      await setupPractice(page)
       await shot('practice-setup')
       await page.getByTestId('start-practice').click()
       await shot('practice-question')
@@ -48,7 +49,7 @@ for (const [vpName, viewport] of Object.entries(VIEWPORTS)) {
 
       await page.goto('/#/')
       await page.goto('/#/practice')
-      await page.getByRole('radio', { name: '例句填空' }).click()
+      await setupPractice(page, 'cloze')
       await page.getByTestId('start-practice').click()
       await shot('practice-cloze')
 

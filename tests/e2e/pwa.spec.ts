@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { openApp } from './helpers'
+import { openApp, setupPractice } from './helpers'
 
 test('PWA：manifest 可安裝（名稱、圖示、standalone）', async ({ page, request }) => {
   await openApp(page)
@@ -28,6 +28,7 @@ test('斷網後重新整理仍可使用（Service Worker 快取）', async ({ pa
   await page.reload()
   await expect(page.getByTestId('deck-card').first()).toBeVisible()
   await page.getByRole('link', { name: '練習' }).first().click()
+  await setupPractice(page)
   await page.getByTestId('start-practice').click()
   await expect(page.getByTestId('practice-runner')).toBeVisible()
 })
@@ -44,6 +45,7 @@ test('已開啟的 App 斷網後所有功能照常（資料在 IndexedDB）', as
     await expect(page.getByTestId(testid)).toBeVisible()
   }
   await page.getByRole('link', { name: '練習' }).first().click()
+  await setupPractice(page)
   await page.getByTestId('start-practice').click()
   await page.locator('[data-testid=option][data-correct=true]').click()
   await page.getByTestId('rate-3').click()

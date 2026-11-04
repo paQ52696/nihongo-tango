@@ -26,13 +26,10 @@ test('內建練習題庫：加入、練習、講解', async ({ page }) => {
   await page.goto('/#/')
   await page.getByRole('button', { name: '練習 動詞變化' }).click()
   await expect(page.getByTestId('mode-conjugate')).toHaveAttribute('aria-checked', 'true')
-  // 只留ない形
-  for (const f of ['masu', 'te', 'ta', 'dict']) {
-    const chip = page.getByTestId('form-' + f)
-    if ((await chip.getAttribute('aria-pressed')) === 'true') await chip.click()
-  }
-  await expect(page.getByTestId('form-nai')).toHaveAttribute('aria-pressed', 'true')
-  // 最後一個不能取消
+  // 變化形預設都不選，沒選不能開始
+  for (const f of ['masu', 'te', 'nai', 'ta', 'dict']) await expect(page.getByTestId('form-' + f)).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByTestId('start-practice')).toBeDisabled()
+  // 只選ない形
   await page.getByTestId('form-nai').click()
   await expect(page.getByTestId('form-nai')).toHaveAttribute('aria-pressed', 'true')
   await page.getByTestId('start-practice').click()
@@ -40,15 +37,21 @@ test('內建練習題庫：加入、練習、講解', async ({ page }) => {
   await page.locator('[data-testid=option][data-correct=true]').click()
   await expect(page.getByTestId('explain')).toContainText('ない')
 
-  // 勾選會記住
+  // 重新打開又是都不選；直接打開練習頁時單字庫、題型也都不選
   await page.goto('/#/')
   await page.goto('/#/practice?mode=conjugate')
-  await expect(page.getByTestId('form-te')).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByTestId('form-nai')).toHaveAttribute('aria-pressed', 'false')
+  await page.goto('/#/')
+  await page.goto('/#/practice')
+  await expect(page.getByTestId('deck-chip').first()).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('[data-testid^=mode-][aria-checked=true]')).toHaveCount(0)
+  await expect(page.getByTestId('start-practice')).toBeDisabled()
 
   // 形容詞變化
   await page.goto('/#/')
   await page.goto('/#/practice?mode=adjective')
   await expect(page.getByTestId('mode-adjective')).toContainText(/\d{2}/)
+  await page.getByTestId('form-ta').click()
   await page.getByTestId('start-practice').click()
   await expect(page.getByTestId('option')).toHaveCount(4)
 

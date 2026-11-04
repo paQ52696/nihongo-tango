@@ -61,11 +61,20 @@ export async function answerRound(page: Page, plan: (i: number) => boolean): Pro
   return total
 }
 
+/** 練習頁預設什麼都不選：把還沒選的單字庫全選，再選題型 */
+export async function setupPractice(page: Page, mode = 'kanji2reading', allDecks = true) {
+  await expect(page.getByTestId('deck-chip').first()).toBeVisible()
+  if (allDecks) for (const chip of await page.getByTestId('deck-chip').all()) if ((await chip.getAttribute('aria-pressed')) !== 'true') await chip.click()
+  const m = page.getByTestId('mode-' + mode)
+  if ((await m.getAttribute('aria-checked')) !== 'true') await m.click()
+}
+
 export async function startPractice(page: Page, opts: { deckId?: string; pages?: [number, number]; count?: 10 | 20 | 50; scopeAll?: boolean } = {}) {
   // 先離開練習頁，確保練習頁重新載入（同一個網址再 goto 不會重設畫面）
   if (page.url().includes('#/practice')) await page.goto('/#/')
   await page.goto('/#/practice' + (opts.deckId ? `?decks=${opts.deckId}` : ''))
   await expect(page.getByTestId('start-practice')).toBeVisible()
+  await setupPractice(page, 'kanji2reading', !opts.deckId)
   if (opts.scopeAll) await page.getByRole('radio', { name: /^全部/ }).click()
   if (opts.pages) {
     await page.getByRole('radio', { name: /頁數範圍/ }).click()
