@@ -1,6 +1,7 @@
 # Supabase 免費專案一週沒有活動就會自動暫停（同步會失效，要到 Supabase 網站手動恢復）。
-# 這裡每 3 天自動查詢一次資料庫，讓專案保持「有在使用」。
-# 匿名身分沒有讀取權限（資料都受 RLS 保護），回應「permission denied」也代表查詢確實到了資料庫。
+# 這裡每 3 天自動呼叫一次資料庫函式 public.keepalive()（定義在 supabase/schema.sql），讓專案保持「有在使用」。
+# 注意：被 RLS 擋下的查詢（permission denied）不算活動——2026/11 曾經每次都回「沒有權限」卻照樣被暫停，
+# 所以這裡只接受 HTTP 200，其他回應一律標成失敗，GitHub 會寄信通知。
 # 需要的 repository secrets：VITE_SUPABASE_URL、VITE_SUPABASE_ANON_KEY（和部署用的相同）
 name: Keep Supabase awake
 
@@ -27,15 +28,17 @@ jobs:
           echo "網址：$(printf '%s' "$URL" | sed -E 's#(https?://)[^.]{4}[^.]*#\1****#')"
           rm -f body.json
           code=$(curl -s --retry 3 --retry-all-errors --max-time 30 -o body.json -w '%{http_code}' \
-            "$URL/rest/v1/decks?select=id&limit=1" -H "apikey: $KEY" || true)
+            -X POST "$URL/rest/v1/rpc/keepalive" -H "apikey: $KEY" -H 'Content-Type: application/json' -d '{}' || true)
           # 只印出錯誤代碼與訊息（不會含金鑰）
           echo "::notice::HTTP $code：$(head -c 300 body.json 2>/dev/null || true)"
           case "$code" in
-            200) echo "Supabase 有回應" ;;
+            200) echo "Supabase 有回應，資料庫查詢成功" ;;
+            404) echo "::error::找不到 keepalive 函式：請到 Supabase 後台 SQL Editor 執行 supabase/schema.sql 最後一段"; exit 1 ;;
             401|403)
-              if grep -q '42501' body.json; then echo "Supabase 有回應（資料庫回答「沒有權限」，代表查詢有到資料庫）"
-              else echo "::error::Supabase 拒絕了金鑰：請確認 repo secrets 的 VITE_SUPABASE_ANON_KEY 和 .env 相同"; exit 1; fi ;;
-            000) echo "::error::連不到 Supabase：請確認 VITE_SUPABASE_URL 是 https://xxxx.supabase.co"; exit 1 ;;
+              if grep -q '42501' body.json; then echo "::error::keepalive 函式沒有開放給 anon：請重新執行 supabase/schema.sql 最後一段"
+              else echo "::error::Supabase 拒絕了金鑰：請確認 repo secrets 的 VITE_SUPABASE_ANON_KEY 和 .env 相同"; fi
+              exit 1 ;;
+            000) echo "::error::連不到 Supabase：專案可能已經暫停（請到 Supabase 網站按 Restore），或 VITE_SUPABASE_URL 不是 https://xxxx.supabase.co"; exit 1 ;;
             5*|540) echo "::error::Supabase 沒有正常回應（專案可能已經暫停，請到 Supabase 網站按 Restore）"; exit 1 ;;
-            *) echo "Supabase 有回應（HTTP $code）" ;;
+            *) echo "::error::Supabase 回應了非預期的 HTTP $code"; exit 1 ;;
           esac

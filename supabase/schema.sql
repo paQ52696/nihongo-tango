@@ -59,3 +59,10 @@ begin
     $f$, t);
   end loop;
 end $$;
+
+-- 防暫停排程（.github/workflows/keepalive.yml）用：未登入也能呼叫的最小查詢，只回傳現在時間，不碰任何使用者資料。
+-- 被 RLS 擋下的請求（permission denied）不會讓 Supabase 認定專案「有在使用」，所以要一個真的會成功的查詢。
+create or replace function public.keepalive() returns timestamptz
+language sql stable as $$ select now() $$;
+revoke all on function public.keepalive() from public;
+grant execute on function public.keepalive() to anon, authenticated;
